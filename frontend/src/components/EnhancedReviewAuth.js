@@ -748,7 +748,7 @@ const EnhancedReviewAuth = () => {
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
             <div className="flex items-center">
               <div className="p-2 rounded-full bg-blue-100 dark:bg-blue-900">
-                <span className="text-blue-600 dark:text-blue-400 text-xl">📊</span>
+                <span className="text-blue-600 dark:text-blue-400 text-xl"></span>
               </div>
               <div className="ml-4">
                 <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Reviews</h3>
@@ -760,7 +760,7 @@ const EnhancedReviewAuth = () => {
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
             <div className="flex items-center">
               <div className="p-2 rounded-full bg-green-100 dark:bg-green-900">
-                <span className="text-green-600 dark:text-green-400 text-xl">✅</span>
+                <span className="text-green-600 dark:text-green-400 text-xl"></span>
               </div>
               <div className="ml-4">
                 <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Authenticated</h3>
@@ -772,7 +772,7 @@ const EnhancedReviewAuth = () => {
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
             <div className="flex items-center">
               <div className="p-2 rounded-full bg-yellow-100 dark:bg-yellow-900">
-                <span className="text-yellow-600 dark:text-yellow-400 text-xl">⚠️</span>
+                <span className="text-yellow-600 dark:text-yellow-400 text-xl"></span>
               </div>
               <div className="ml-4">
                 <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Suspicious</h3>
@@ -784,7 +784,7 @@ const EnhancedReviewAuth = () => {
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
             <div className="flex items-center">
               <div className="p-2 rounded-full bg-red-100 dark:bg-red-900">
-                <span className="text-red-600 dark:text-red-400 text-xl">🚨</span>
+                <span className="text-red-600 dark:text-red-400 text-xl"></span>
               </div>
               <div className="ml-4">
                 <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Fake</h3>
@@ -796,7 +796,7 @@ const EnhancedReviewAuth = () => {
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
             <div className="flex items-center">
               <div className="p-2 rounded-full bg-indigo-100 dark:bg-indigo-900">
-                <span className="text-indigo-600 dark:text-indigo-400 text-xl">🎯</span>
+                <span className="text-indigo-600 dark:text-indigo-400 text-xl"></span>
               </div>
               <div className="ml-4">
                 <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Avg Score</h3>
@@ -809,7 +809,7 @@ const EnhancedReviewAuth = () => {
             <div className="flex items-center">
               <div className={`p-2 rounded-full ${analytics.trustScoreImpact >= 0 ? 'bg-green-100 dark:bg-green-900' : 'bg-red-100 dark:bg-red-900'}`}>
                 <span className={`text-xl ${analytics.trustScoreImpact >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {analytics.trustScoreImpact >= 0 ? '📈' : '📉'}
+                  {analytics.trustScoreImpact >= 0 ? '' : ''}
                 </span>
               </div>
               <div className="ml-4">
@@ -982,7 +982,7 @@ const EnhancedReviewAuth = () => {
                   {buttonLoading.bulkApprove && (
                     <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
                   )}
-                  <span>✅ Bulk Approve</span>
+                  <span>Bulk Approve</span>
                 </button>
                 
                 <button
@@ -993,7 +993,7 @@ const EnhancedReviewAuth = () => {
                   {buttonLoading.bulkReject && (
                     <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
                   )}
-                  <span>❌ Bulk Reject</span>
+                  <span>Bulk Reject</span>
                 </button>
                 
                 <button
@@ -1004,7 +1004,7 @@ const EnhancedReviewAuth = () => {
                   {buttonLoading.bulkEscalate && (
                     <div className="w-3 h-3 border border-black border-t-transparent rounded-full animate-spin"></div>
                   )}
-                  <span>⚠️ Bulk Escalate</span>
+                  <span>Bulk Escalate</span>
                 </button>
                 
                 <button
@@ -1015,7 +1015,7 @@ const EnhancedReviewAuth = () => {
                   {buttonLoading.bulkMarkFraudulent && (
                     <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
                   )}
-                  <span>🚨 Bulk Fraud</span>
+                  <span>Bulk Fraud</span>
                 </button>
                 
                 <button
@@ -1084,9 +1084,9 @@ const EnhancedReviewAuth = () => {
                                 <span className="ml-2 font-medium text-gray-900 dark:text-white">{authRecord.authenticityScore ?? 100}%</span>
                                 {authRecord.aiAnalysisData?.modelUsed && (
                                   <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                    <div>🤖 Model: {authRecord.aiAnalysisData.modelUsed}</div>
+                                    <div>Model: {authRecord.aiAnalysisData.modelUsed}</div>
                                     {authRecord.aiAnalysisData?.reasoning && (
-                                      <div>💭 {authRecord.aiAnalysisData.reasoning}</div>
+                                      <div>{authRecord.aiAnalysisData.reasoning}</div>
                                     )}
                                   </div>
                                 )}
@@ -1128,7 +1128,7 @@ const EnhancedReviewAuth = () => {
                                 {buttonLoading[`approve_${review._id}`] && (
                                   <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
                                 )}
-                                <span>✅ Approve</span>
+                                <span>Approve</span>
                               </button>
                               
                               <button
@@ -1139,7 +1139,7 @@ const EnhancedReviewAuth = () => {
                                 {buttonLoading[`reject_${review._id}`] && (
                                   <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
                                 )}
-                                <span>❌ Reject</span>
+                                <span>Reject</span>
                               </button>
                               
                               <button
@@ -1150,7 +1150,7 @@ const EnhancedReviewAuth = () => {
                                 {buttonLoading[`escalate_${review._id}`] && (
                                   <div className="w-3 h-3 border border-black border-t-transparent rounded-full animate-spin"></div>
                                 )}
-                                <span>⚠️ Escalate</span>
+                                <span>Escalate</span>
                               </button>
                               
                               <button
@@ -1161,7 +1161,7 @@ const EnhancedReviewAuth = () => {
                                 {buttonLoading[`fraud_${review._id}`] && (
                                   <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
                                 )}
-                                <span>🚨 Mark Fraudulent</span>
+                                <span>Mark Fraudulent</span>
                               </button>
                             </div>
                           )}
@@ -1213,14 +1213,14 @@ const EnhancedReviewAuth = () => {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">🧠 AI Authenticity Score:</label>
                   <p className="text-2xl font-bold text-green-600 dark:text-green-400">{authDetails.overallAuthenticationScore || authDetails.authenticityScore || 0}%</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Status: {authDetails.finalDecision?.status === 'authentic' ? '✅ Authentic' : 
-                            authDetails.finalDecision?.status === 'suspicious' ? '⚠️ Suspicious' : 
-                            authDetails.finalDecision?.status === 'fake' ? '🚨 Fake' : '🔍 Under Investigation'}
+                    Status: {authDetails.finalDecision?.status === 'authentic' ? 'Authentic' : 
+                            authDetails.finalDecision?.status === 'suspicious' ? 'Suspicious' : 
+                            authDetails.finalDecision?.status === 'fake' ? 'Fake' : 'Under Investigation'}
                   </p>
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">🔍 AI Analysis Steps:</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">AI Analysis Steps:</label>
                   <div className="space-y-2">
                     {authDetails.authenticationSteps?.map((step, index) => (
                       <div key={index} className="border-l-2 border-gray-200 pl-3">
@@ -1236,8 +1236,8 @@ const EnhancedReviewAuth = () => {
                         </div>
                         {step.aiAnalysis && (
                           <div className="mt-1 text-xs text-gray-600 dark:text-gray-400">
-                            <div>🤖 Model: {step.aiAnalysis.modelUsed}</div>
-                            <div>💭 Reasoning: {step.aiAnalysis.reasoning}</div>
+                            <div>Model: {step.aiAnalysis.modelUsed}</div>
+                            <div>Reasoning: {step.aiAnalysis.reasoning}</div>
                           </div>
                         )}
                       </div>
@@ -1289,12 +1289,12 @@ const EnhancedReviewAuth = () => {
                       .map((step, index) => (
                         <div key={index} className="text-sm text-gray-600 dark:text-gray-400 bg-blue-50 dark:bg-blue-900 p-3 rounded mt-2">
                           <div className="grid grid-cols-2 gap-2">
-                            <div>📝 Word Count: {step.linguisticAnalysis.wordCount}</div>
-                            <div>🎯 Lexical Diversity: {(step.linguisticAnalysis.lexicalDiversity * 100).toFixed(1)}%</div>
-                            <div>📏 Avg Sentence Length: {step.linguisticAnalysis.avgSentenceLength?.toFixed(1)}</div>
-                            <div>📊 Sentence Variance: {step.linguisticAnalysis.sentenceVariance?.toFixed(1)}</div>
-                            <div>📖 Readability Score: {step.linguisticAnalysis.readabilityScore?.toFixed(1)}</div>
-                            <div>😊 Emotional Words: {step.linguisticAnalysis.emotionalWords?.length || 0}</div>
+                            <div>Word Count: {step.linguisticAnalysis.wordCount}</div>
+                            <div>Lexical Diversity: {(step.linguisticAnalysis.lexicalDiversity * 100).toFixed(1)}%</div>
+                            <div>Avg Sentence Length: {step.linguisticAnalysis.avgSentenceLength?.toFixed(1)}</div>
+                            <div>Sentence Variance: {step.linguisticAnalysis.sentenceVariance?.toFixed(1)}</div>
+                            <div>Readability Score: {step.linguisticAnalysis.readabilityScore?.toFixed(1)}</div>
+                            <div>Emotional Words: {step.linguisticAnalysis.emotionalWords?.length || 0}</div>
                           </div>
                           {step.linguisticAnalysis.tfidfTopTerms?.length > 0 && (
                             <div className="mt-2">

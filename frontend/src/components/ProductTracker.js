@@ -303,7 +303,7 @@ const ProductTracker = () => {
     if (product.returnRate > 50) {
       flags.push({
         type: 'critical',
-        icon: '🚨',
+        icon: '',
         label: 'Critical Return Rate',
         description: `${product.returnRate}% return rate detected. Severe trust penalty applied.`,
         color: 'bg-red-100 text-red-800 border-red-200'
@@ -311,7 +311,7 @@ const ProductTracker = () => {
     } else if (product.returnRate >= 30 && product.returnRate <= 50) {
       flags.push({
         type: 'warning',
-        icon: '⚠️',
+        icon: '',
         label: 'High Return Rate',
         description: `${product.returnRate}% return rate detected. Trust penalty applied.`,
         color: 'bg-yellow-100 text-yellow-800 border-yellow-200'
@@ -324,7 +324,7 @@ const ProductTracker = () => {
       if (rapidReturnRate > 75) {
         flags.push({
           type: 'critical',
-          icon: '🔄',
+          icon: '',
           label: 'Rapid Returns',
           description: `${product.totalReturned} returns out of ${product.totalSold} sales. Possible fraud pattern.`,
           color: 'bg-red-100 text-red-800 border-red-200'
@@ -337,7 +337,7 @@ const ProductTracker = () => {
     if (productAge <= 30 && product.returnRate > 25) {
       flags.push({
         type: 'warning',
-        icon: '🚨',
+        icon: '',
         label: 'New Product Flag',
         description: `New product (${Math.round(productAge)} days) with ${product.returnRate}% returns.`,
         color: 'bg-orange-100 text-orange-800 border-orange-200'
@@ -491,25 +491,25 @@ const ProductTracker = () => {
                 onClick={trackView}
                 className="bg-blue-600 hover:bg-blue-700 focus:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                📊 Track View
+                Track View
               </button>
               <button
                 onClick={() => progressStage('listed')}
                 className="bg-green-600 hover:bg-green-700 focus:bg-green-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
               >
-                🏪 List Product
+                List Product
               </button>
               <button
                 onClick={() => progressStage('promoted')}
                 className="bg-purple-600 hover:bg-purple-700 focus:bg-purple-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
               >
-                ⭐ Promote
+                Promote
               </button>
               <button
                 onClick={() => progressStage('sold')}
                 className="bg-yellow-600 hover:bg-yellow-700 focus:bg-yellow-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
               >
-                💰 Mark Sold
+                Mark Sold
               </button>
               
               <button
@@ -523,7 +523,7 @@ const ProductTracker = () => {
                     <span>Processing...</span>
                   </>
                 ) : (
-                  <>📦 Track Purchase</>
+                  <>Track Purchase</>
                 )}
               </button>
               <button
@@ -537,7 +537,7 @@ const ProductTracker = () => {
                     <span>Processing...</span>
                   </>
                 ) : (
-                  <>🔄 Track Return</>
+                  <>Track Return</>
                 )}
               </button>
               <button
@@ -551,7 +551,7 @@ const ProductTracker = () => {
                     <span>Updating...</span>
                   </>
                 ) : (
-                  <>🎯 Update Trust</>
+                  <>Update Trust</>
                 )}
               </button>
             </div>
@@ -572,7 +572,7 @@ const ProductTracker = () => {
                   </div>
                   <div className="flex-1">
                     <h3 className="text-sm font-semibold text-red-800 dark:text-red-200">
-                      🚩 Product Flagged - Requires Attention
+                      Product Flagged - Requires Attention
                     </h3>
                     <div className="mt-2 space-y-1">
                       {getProductFlags(selectedProduct).map((flag, index) => (
@@ -586,13 +586,13 @@ const ProductTracker = () => {
                         onClick={() => openDetailsModal(selectedProduct)}
                         className="text-xs bg-red-100 hover:bg-red-200 dark:bg-red-800 dark:hover:bg-red-700 text-red-800 dark:text-red-200 px-3 py-1 rounded-md transition-colors"
                       >
-                        📊 View Full Analysis
+                        View Full Analysis
                       </button>
                       <button
                         onClick={recalculateSellerTrust}
                         className="text-xs bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-800 dark:hover:bg-yellow-700 text-yellow-800 dark:text-yellow-200 px-3 py-1 rounded-md transition-colors"
                       >
-                        🎯 Update Trust Score
+                        Update Trust Score
                       </button>
                     </div>
                   </div>
@@ -726,7 +726,7 @@ const ProductTracker = () => {
                         onClick={() => openDetailsModal(selectedProduct)}
                         className="block w-full mt-2 px-3 py-1 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 text-xs font-medium rounded-md transition-colors duration-200"
                       >
-                        📊 View Details
+                        View Details
                       </button>
                     </div>
                   )}

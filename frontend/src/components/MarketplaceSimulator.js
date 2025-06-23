@@ -168,15 +168,15 @@ const MarketplaceSimulator = () => {
   // Real trust badge based on actual vendor trust scores
   const getTrustBadge = (vendor) => {
     if (!vendor || !vendor.name) {
-      return { text: '⚠️ Missing Vendor', color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200', icon: '⚠️' };
+      return { text: ' Missing Vendor', color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200', icon: '' };
     }
     
     const score = vendor.trustScore || 0;
     
-    if (score >= 80) return { text: 'Elite Seller', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200', icon: '👑' };
-    if (score >= 60) return { text: 'Trusted', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200', icon: '✅' };
-    if (score >= 40) return { text: 'Verified', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200', icon: '🔷' };
-    return { text: '⚠️ Low Trust', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200', icon: '⚠️' };
+    if (score >= 80) return { text: 'Elite Seller', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200', icon: '' };
+    if (score >= 60) return { text: 'Trusted', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200', icon: '' };
+    if (score >= 40) return { text: 'Verified', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200', icon: '' };
+    return { text: ' Low Trust', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200', icon: '' };
   };
 
   // Real authenticity score colors based on actual scores
@@ -191,7 +191,7 @@ const MarketplaceSimulator = () => {
     if (score >= 90) return 'Excellent';
     if (score >= 70) return 'Good';
     if (score > 0) return 'Poor';
-    return '⚠️ Unknown';
+    return ' Unknown';
   };
 
   // Real fraud detection rate with color coding
@@ -202,9 +202,9 @@ const MarketplaceSimulator = () => {
   };
 
   const getFraudRateIcon = (rate) => {
-    if (rate >= 20) return '🚨';
-    if (rate >= 10) return '⚠️';
-    if (rate > 0) return '🎯';
+    if (rate >= 20) return '';
+    if (rate >= 10) return '';
+    if (rate > 0) return '';
     return '✅';
   };
 
@@ -226,7 +226,7 @@ const MarketplaceSimulator = () => {
     <div className="max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">🛒 TrustLens Marketplace</h2>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">TrustLens Marketplace</h2>
           <p className="text-gray-600 dark:text-gray-300 mt-2">Real-time fraud detection powered by MongoDB Atlas data</p>
       </div>
 
@@ -261,7 +261,7 @@ const MarketplaceSimulator = () => {
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-md flex items-center justify-center">
-                  <span className="text-blue-600 dark:text-blue-400">💳</span>
+                  <span className="text-blue-600 dark:text-blue-400"></span>
                 </div>
               </div>
               <div className="ml-3">
@@ -276,7 +276,7 @@ const MarketplaceSimulator = () => {
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <div className="w-8 h-8 bg-red-100 dark:bg-red-900 rounded-md flex items-center justify-center">
-                  <span className="text-red-600 dark:text-red-400">🚨</span>
+                  <span className="text-red-600 dark:text-red-400"></span>
                 </div>
               </div>
               <div className="ml-3">
@@ -310,7 +310,7 @@ const MarketplaceSimulator = () => {
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900 rounded-md flex items-center justify-center">
-                  <span className="text-purple-600 dark:text-purple-400">🛡️</span>
+                  <span className="text-purple-600 dark:text-purple-400"></span>
                 </div>
               </div>
               <div className="ml-3">
@@ -327,7 +327,7 @@ const MarketplaceSimulator = () => {
           <div className="xl:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow transition-colors duration-200">
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
-                <span className="mr-2">🛍️</span>
+                <span className="mr-2"></span>
                 Real Product Listings
                 <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">({products.length} products)</span>
               </h3>
@@ -377,7 +377,7 @@ const MarketplaceSimulator = () => {
                             </span>
                             {product.fraudFlagged && (
                               <span className="px-2 py-1 text-xs font-medium rounded-full bg-red-200 text-red-900 dark:bg-red-800 dark:text-red-200">
-                                🚨 FRAUD FLAGGED
+                                 FRAUD FLAGGED
                               </span>
                             )}
                           </div>
@@ -385,7 +385,7 @@ const MarketplaceSimulator = () => {
                         
                         <h4 className="font-semibold text-gray-900 dark:text-white mb-1 line-clamp-2">{product.name}</h4>
                         <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
-                          by <span className="font-medium">{product.vendor?.name || '⚠️ Unknown Vendor'}</span>
+                          by <span className="font-medium">{product.vendor?.name || ' Unknown Vendor'}</span>
                         </p>
                         
                         <div className="flex items-center justify-between mb-3">
@@ -394,12 +394,12 @@ const MarketplaceSimulator = () => {
                           </span>
                           <div className="text-right">
                             <div className="text-sm text-gray-600 dark:text-gray-300">
-                              ⭐ {product.reviewCount} reviews
+                               {product.reviewCount} reviews
                             </div>
                             <div className={`text-sm font-semibold ${
                               product.authenticityScore > 0 ? 'text-gray-900 dark:text-white' : 'text-red-600 dark:text-red-400'
                             }`}>
-                              🔒 {product.authenticityScore > 0 ? `${product.authenticityScore.toFixed(1)}%` : '⚠️ Unknown'} authentic
+                              🔒 {product.authenticityScore > 0 ? `${product.authenticityScore.toFixed(1)}%` : ' Unknown'} authentic
                             </div>
                           </div>
                   </div>
@@ -432,8 +432,8 @@ const MarketplaceSimulator = () => {
                         
                         {/* Real Vendor Trust Info */}
                         <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                          <span>🏆 Trust: {product.vendor?.trustScore ? `${product.vendor.trustScore}%` : '⚠️ N/A'}</span>
-                          <span>📦 Return: {product.vendor?.returnRate !== undefined ? `${product.vendor.returnRate}%` : '⚠️ N/A'}</span>
+                          <span> Trust: {product.vendor?.trustScore ? `${product.vendor.trustScore}%` : ' N/A'}</span>
+                          <span> Return: {product.vendor?.returnRate !== undefined ? `${product.vendor.returnRate}%` : ' N/A'}</span>
                     </div>
                   </div>
                     );
@@ -447,7 +447,7 @@ const MarketplaceSimulator = () => {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow transition-colors duration-200">
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
-                <span className="mr-2">📡</span>
+                <span className="mr-2"></span>
                 Real Activity Feed
                 <span className="ml-2 text-xs text-green-600 dark:text-green-400">● LIVE</span>
               </h3>
@@ -456,7 +456,7 @@ const MarketplaceSimulator = () => {
             <div className="space-y-3 max-h-96 overflow-y-auto">
                 {liveActivity.length === 0 ? (
                   <div className="text-center py-4">
-                    <div className="text-gray-400 text-2xl mb-2">📡</div>
+                    <div className="text-gray-400 text-2xl mb-2"></div>
                     <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">No recent activity</p>
                     <p className="text-gray-400 dark:text-gray-500 text-xs mt-1">Activity will appear from real database changes</p>
                   </div>

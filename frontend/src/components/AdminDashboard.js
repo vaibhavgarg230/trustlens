@@ -17,14 +17,14 @@ const AdminDashboard = () => {
   const location = useLocation();
 
   const tabs = [
-    { id: 'dashboard', name: 'Dashboard', icon: '📊' },
-    { id: 'analytics', name: 'TrustDNA', icon: '🤖' },
-    { id: 'product-tracker', name: 'Product Tracker', icon: '📦' },
-    { id: 'review-auth', name: 'Review Auth', icon: '🔍' },
-    { id: 'marketplace', name: 'Marketplace', icon: '🛒' },
-    { id: 'predictions', name: 'Prediction Market', icon: '🎯' },
-    { id: 'alerts', name: 'Alert System', icon: '🚨' },
-    { id: 'community', name: 'Community Validation', icon: '🏛️' }
+    { id: 'dashboard', name: 'Dashboard', icon: '' },
+    { id: 'analytics', name: 'TrustDNA', icon: '' },
+    { id: 'product-tracker', name: 'Product Tracker', icon: '' },
+    { id: 'review-auth', name: 'Review Auth', icon: '' },
+    { id: 'marketplace', name: 'Marketplace', icon: '' },
+    { id: 'predictions', name: 'Prediction Market', icon: '' },
+    { id: 'alerts', name: 'Alert System', icon: '' },
+    { id: 'community', name: 'Community Validation', icon: '' }
   ];
 
   useEffect(() => {
@@ -123,7 +123,7 @@ const AdminDashboard = () => {
                 onClick={handleLogout}
                 className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
               >
-                🚪 Logout
+                Logout
               </button>
             </div>
           </div>

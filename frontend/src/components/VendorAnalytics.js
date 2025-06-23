@@ -220,9 +220,9 @@ export default function VendorAnalytics() {
       <div className="mb-6">
         <nav className="flex space-x-8">
           {[
-            { id: 'overview', name: 'Overview', icon: '📊' },
-            { id: 'revenue', name: 'Revenue', icon: '💰' },
-            { id: 'customers', name: 'Customers', icon: '👥' }
+            { id: 'overview', name: 'Overview', icon: '' },
+            { id: 'revenue', name: 'Revenue', icon: '' },
+            { id: 'customers', name: 'Customers', icon: '' }
           ].map((tab) => (
             <button
               key={tab.id}

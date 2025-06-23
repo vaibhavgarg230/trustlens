@@ -123,7 +123,7 @@ export default function CustomerDashboard() {
                   {user.trustScore}
                 </p>
               </div>
-              <div className="text-3xl">🛡️</div>
+              <div className="text-3xl"></div>
             </div>
           </div>
 
@@ -136,7 +136,7 @@ export default function CustomerDashboard() {
                   {user.riskLevel}
                 </p>
               </div>
-              <div className="text-3xl">⚠️</div>
+              <div className="text-3xl"></div>
             </div>
           </div>
 
@@ -147,7 +147,7 @@ export default function CustomerDashboard() {
                 <p className="text-sm text-gray-600 mb-1">Transactions</p>
                 <p className="text-2xl font-bold text-blue-600">{user.transactionCount}</p>
               </div>
-              <div className="text-3xl">💳</div>
+              <div className="text-3xl"></div>
             </div>
           </div>
 
@@ -158,7 +158,7 @@ export default function CustomerDashboard() {
                 <p className="text-sm text-gray-600 mb-1">Account Age</p>
                 <p className="text-2xl font-bold text-green-600">{user.accountAge} days</p>
               </div>
-              <div className="text-3xl">📅</div>
+              <div className="text-3xl"></div>
             </div>
           </div>
         </div>
@@ -194,13 +194,13 @@ export default function CustomerDashboard() {
               onClick={() => navigate('/customer/products')}
               className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
             >
-              🛍️ Browse Products
+              Browse Products
             </button>
             <button 
               onClick={() => navigate('/customer/orders')}
               className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition"
             >
-              📦 My Orders
+              My Orders
             </button>
 
           </div>

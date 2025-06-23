@@ -108,9 +108,9 @@ export default function VendorProductManager() {
       <div className="border-b border-gray-200 mb-6">
         <nav className="-mb-px flex space-x-8">
           {[
-            { id: 'products', name: 'Products', icon: '📦' },
-            { id: 'analytics', name: 'Analytics', icon: '📊' },
-            { id: 'inventory', name: 'Inventory', icon: '📋' }
+            { id: 'products', name: 'Products', icon: '' },
+            { id: 'analytics', name: 'Analytics', icon: '' },
+            { id: 'inventory', name: 'Inventory', icon: '' }
           ].map((tab) => (
             <button
               key={tab.id}

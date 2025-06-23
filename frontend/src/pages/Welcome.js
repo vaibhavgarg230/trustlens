@@ -142,19 +142,19 @@ export default function Welcome() {
             </h3>
             <div className="grid md:grid-cols-4 gap-4 text-sm text-gray-600 dark:text-gray-300">
               <div>
-                <span className="font-semibold">🧠 Behavioral Analysis</span>
+                <span className="font-semibold">Behavioral Analysis</span>
                 <p>Real-time typing & mouse pattern detection</p>
               </div>
               <div>
-                <span className="font-semibold">🔍 Review Authentication</span>
+                <span className="font-semibold">Review Authentication</span>
                 <p>AI-powered fake review identification</p>
               </div>
               <div>
-                <span className="font-semibold">📊 Trust Scoring</span>
+                <span className="font-semibold">Trust Scoring</span>
                 <p>Dynamic trust metrics for all users</p>
               </div>
               <div>
-                <span className="font-semibold">🚨 Fraud Detection</span>
+                <span className="font-semibold">Fraud Detection</span>
                 <p>Proactive security monitoring</p>
               </div>
             </div>

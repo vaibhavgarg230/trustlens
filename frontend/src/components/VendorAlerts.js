@@ -186,12 +186,12 @@ const VendorAlerts = ({ vendorId }) => {
 
   const getSeverityIcon = (severity) => {
     const icons = {
-      'Critical': '🚨',
-      'High': '⚠️',
-      'Medium': '⚡',
-      'Low': 'ℹ️'
+      'Critical': '',
+      'High': '',
+      'Medium': '',
+      'Low': ''
     };
-    return icons[severity] || '📢';
+    return icons[severity] || '';
   };
 
   const getSeverityDistributionData = () => {

@@ -330,7 +330,7 @@ export default function BrowseProducts() {
                       onClick={() => handleBuyNow(product)}
                       className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition"
                     >
-                      🛒 Buy Now
+                      Buy Now
                     </button>
                   ) : (
                     <button disabled className="w-full bg-gray-400 text-white py-2 px-4 rounded-lg cursor-not-allowed">

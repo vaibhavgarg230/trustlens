@@ -211,13 +211,13 @@ const Dashboard = () => {
         setCurrentTypingAnalysis(null);
         setCurrentMouseAnalysis(null);
         
-        addLiveActivity(`🎯 TRACKING STARTED for user: ${userId.substring(0, 8)}...`, 'system');
-        addLiveActivity('📊 Collecting typing patterns every 10s, mouse data every 15s', 'system');
+        addLiveActivity(`TRACKING STARTED for user: ${userId.substring(0, 8)}...`, 'system');
+        addLiveActivity('Collecting typing patterns every 10s, mouse data every 15s', 'system');
       } else {
-        addLiveActivity('❌ Failed to start tracking - WebSocket not connected', 'error');
+        addLiveActivity('Failed to start tracking - WebSocket not connected', 'error');
       }
     } else {
-      addLiveActivity('❌ No users available for tracking', 'error');
+      addLiveActivity('No users available for tracking', 'error');
     }
   };
 
