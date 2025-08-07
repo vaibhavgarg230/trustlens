@@ -7,7 +7,8 @@ const User = require('../models/User');
 // Get all active prediction markets
 router.get('/', async (req, res) => {
   try {
-    const markets = await PredictionMarket.find({ marketStatus: 'active' })
+    const query = req.query.all === 'true' ? {} : { marketStatus: 'active' };
+    const markets = await PredictionMarket.find(query)
       .populate('targetUser', 'username trustScore')
       .populate('bets.bettor', 'username')
       .sort({ createdAt: -1 });
@@ -81,10 +82,6 @@ router.post('/:id/bet', async (req, res) => {
     
     if (market.marketStatus !== 'active') {
       return res.status(400).json({ message: 'Market is not active' });
-    }
-    
-    if (new Date() > market.expiresAt) {
-      return res.status(400).json({ message: 'Market has expired' });
     }
     
     // Calculate current odds
@@ -267,42 +264,6 @@ router.get('/user/:userId/bets', async (req, res) => {
     
     res.json(userBets);
   } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Auto-resolve expired markets
-router.post('/auto-resolve', async (req, res) => {
-  try {
-    const expiredMarkets = await PredictionMarket.find({
-      marketStatus: 'active',
-      expiresAt: { $lt: new Date() }
-    }).populate('targetUser');
-    
-    const resolved = [];
-    
-    for (const market of expiredMarkets) {
-      if (market.marketType === 'trust_score_prediction') {
-        const currentScore = market.targetUser.trustScore;
-        market.resolveMarket(currentScore, 'system');
-        await market.save();
-        resolved.push({
-          marketId: market._id,
-          outcome: market.resolution.outcome,
-          actualValue: currentScore,
-          targetValue: market.predictionTarget.value
-        });
-      }
-    }
-    
-    console.log(`🤖 Auto-resolved ${resolved.length} expired markets`);
-    
-    res.json({
-      resolved,
-      count: resolved.length
-    });
-  } catch (error) {
-    console.error('Auto-resolve error:', error);
     res.status(500).json({ message: error.message });
   }
 });

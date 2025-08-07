@@ -61,6 +61,9 @@ class LinguisticAnalyzer {
       words.length / (behaviorMetrics.writingTime / 1000 / 60) : 0; // words per minute
 
     const fingerprint = {
+      // Store original text for gibberish detection
+      originalText: text,
+      
       // Basic metrics
       ...metrics,
       
@@ -97,6 +100,22 @@ class LinguisticAnalyzer {
     let score = 100; // Start with perfect score
     let flags = [];
     let reasons = [];
+
+    // 0. Gibberish Detection (Critical - 30 points)
+    const isGibberish = this.detectGibberish(fingerprint);
+    if (isGibberish.isGibberish) {
+      score -= 30;
+      flags.push('GIBBERISH_CONTENT');
+      reasons.push(isGibberish.reason);
+    }
+
+    // 0.5. AI-Generated Content Detection (Critical - 25 points)
+    const aiDetection = this.detectAIGeneratedContent(fingerprint);
+    if (aiDetection.isAIGenerated) {
+      score -= 25;
+      flags.push('AI_GENERATED_CONTENT');
+      reasons.push(aiDetection.reason);
+    }
 
     // 1. Text Quality Analysis (25 points)
     if (fingerprint.wordCount < 10) {
@@ -228,6 +247,200 @@ class LinguisticAnalyzer {
     });
 
     return validFeatures > 0 ? similarity / validFeatures : 0;
+  }
+
+  // Detect gibberish content
+  detectGibberish(fingerprint) {
+    const text = fingerprint.originalText || '';
+    
+    // Only check for gibberish if text is long enough to be suspicious
+    if (text.length < 10) {
+      return {
+        isGibberish: false,
+        reason: null
+      };
+    }
+    
+    // Check for excessive character repetition (like "asdbsfbsf") - more specific
+    const charRepetition = /([a-zA-Z])\1{4,}/g; // Changed from 3 to 4 repetitions
+    if (charRepetition.test(text)) {
+      return {
+        isGibberish: true,
+        reason: 'Excessive character repetition detected (e.g., "asdbsfbsf")'
+      };
+    }
+    
+    // Check for keyboard smashing patterns - more specific
+    const keyboardSmash = /(qwerty|asdfgh|zxcvbn|qazwsx|edcrfv|tgbyhn|ujmikl|oplp;)/gi;
+    if (keyboardSmash.test(text.toLowerCase())) {
+      return {
+        isGibberish: true,
+        reason: 'Keyboard smashing pattern detected'
+      };
+    }
+    
+    // Check for very low vocabulary richness with sufficient length - more lenient
+    if (fingerprint.wordCount > 10 && fingerprint.vocabularyRichness < 0.15) { // Changed from 0.2 to 0.15 and 5 to 10 words
+      return {
+        isGibberish: true,
+        reason: 'Extremely low vocabulary diversity for text length'
+      };
+    }
+    
+    // Check for excessive repetition of the same word - more lenient
+    const words = text.toLowerCase().split(/\s+/);
+    const wordCounts = {};
+    words.forEach(word => {
+      if (word.length > 2) { // Only count words longer than 2 characters
+        wordCounts[word] = (wordCounts[word] || 0) + 1;
+      }
+    });
+    
+    const maxRepetition = Math.max(...Object.values(wordCounts));
+    if (maxRepetition > words.length * 0.5) { // Changed from 0.4 to 0.5
+      return {
+        isGibberish: true,
+        reason: 'Excessive repetition of the same word'
+      };
+    }
+    
+    // Check for non-English character patterns - more lenient
+    const nonEnglishRatio = (text.replace(/[a-zA-Z\s.,!?]/g, '').length / text.length);
+    if (nonEnglishRatio > 0.5) { // Changed from 0.3 to 0.5
+      return {
+        isGibberish: true,
+        reason: 'High ratio of non-English characters'
+      };
+    }
+    
+    // Check for alternating consonant-vowel patterns that are too regular - more specific
+    const alternatingPattern = /([bcdfghjklmnpqrstvwxyz][aeiou]){6,}/gi; // Changed from 4 to 6
+    if (alternatingPattern.test(text.toLowerCase())) {
+      return {
+        isGibberish: true,
+        reason: 'Suspicious alternating consonant-vowel pattern'
+      };
+    }
+    
+    // Check for random character sequences - more specific
+    const randomCharPattern = /[a-zA-Z]{3,}[bcdfghjklmnpqrstvwxyz]{5,}/g; // Made more specific
+    if (randomCharPattern.test(text.toLowerCase())) {
+      return {
+        isGibberish: true,
+        reason: 'Random character sequence pattern detected'
+      };
+    }
+    
+    return {
+      isGibberish: false,
+      reason: null
+    };
+  }
+
+  // Detect AI-generated content patterns
+  detectAIGeneratedContent(fingerprint) {
+    const text = fingerprint.originalText || '';
+    const lowerText = text.toLowerCase();
+    
+    // Check for overly descriptive language (common in AI reviews)
+    const descriptivePhrases = [
+      'truly stands out', 'exactly what you want', 'cooks up beautifully',
+      'fills the kitchen with', 'turns out perfect every time',
+      'definitely a', 'highly recommended', 'lives up to its name',
+      'quality', 'essential', 'pantry essential', 'goes a long way',
+      'perfect every time', 'beautifully', 'lovely', 'nutty aroma'
+    ];
+    
+    const descriptiveCount = descriptivePhrases.filter(phrase => 
+      lowerText.includes(phrase)
+    ).length;
+    
+    if (descriptiveCount >= 3) {
+      return {
+        isAIGenerated: true,
+        reason: 'Overly descriptive marketing language detected'
+      };
+    }
+    
+    // Check for excessive positive adjectives
+    const positiveAdjectives = [
+      'perfect', 'beautiful', 'lovely', 'excellent', 'amazing', 'fantastic',
+      'wonderful', 'outstanding', 'superb', 'magnificent', 'splendid',
+      'fragrant', 'fluffy', 'nutty', 'aromatic'
+    ];
+    
+    const adjectiveCount = positiveAdjectives.filter(adj => 
+      lowerText.includes(adj)
+    ).length;
+    
+    if (adjectiveCount >= 4) {
+      return {
+        isAIGenerated: true,
+        reason: 'Excessive positive adjectives detected'
+      };
+    }
+    
+    // Check for marketing-style language
+    const marketingPhrases = [
+      'definitely', 'highly recommended', 'essential', 'must-have',
+      'game-changer', 'worth every penny', 'best investment',
+      'pantry essential', 'lives up to its name'
+    ];
+    
+    const marketingCount = marketingPhrases.filter(phrase => 
+      lowerText.includes(phrase)
+    ).length;
+    
+    if (marketingCount >= 2) {
+      return {
+        isAIGenerated: true,
+        reason: 'Marketing language patterns detected'
+      };
+    }
+    
+    // Check for repetitive sentence structures
+    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    if (sentences.length >= 3) {
+      const sentenceStarters = sentences.map(s => 
+        s.trim().toLowerCase().split(' ')[0]
+      );
+      
+      const starterCounts = {};
+      sentenceStarters.forEach(starter => {
+        starterCounts[starter] = (starterCounts[starter] || 0) + 1;
+      });
+      
+      const maxStarterCount = Math.max(...Object.values(starterCounts));
+      if (maxStarterCount >= 3) {
+        return {
+          isAIGenerated: true,
+          reason: 'Repetitive sentence structures detected'
+        };
+      }
+    }
+    
+    // Check for overly enthusiastic language
+    const enthusiasticPhrases = [
+      'absolutely love', 'completely satisfied', 'beyond expectations',
+      'couldn\'t be happier', 'exceeded all expectations', 'perfect in every way',
+      'definitely a pantry essential', 'highly recommended'
+    ];
+    
+    const enthusiasticCount = enthusiasticPhrases.filter(phrase => 
+      lowerText.includes(phrase)
+    ).length;
+    
+    if (enthusiasticCount >= 2) {
+      return {
+        isAIGenerated: true,
+        reason: 'Overly enthusiastic language detected'
+      };
+    }
+    
+    return {
+      isAIGenerated: false,
+      reason: null
+    };
   }
 
   // Detect potential fake review patterns

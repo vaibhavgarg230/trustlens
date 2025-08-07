@@ -13,10 +13,6 @@ const EnhancedReviewAuth = () => {
   const [buttonLoading, setButtonLoading] = useState({});
   const [toastMessage, setToastMessage] = useState(null);
   
-  // Bulk Actions State
-  const [selectedReviews, setSelectedReviews] = useState([]);
-  const [selectAll, setSelectAll] = useState(false);
-  
   // Advanced Filtering State
   const [dateRange, setDateRange] = useState({ from: '', to: '' });
   const [searchTerm, setSearchTerm] = useState('');
@@ -85,7 +81,7 @@ const EnhancedReviewAuth = () => {
       
       // Use apiService instead of direct fetch
       const reviewsResponse = await apiService.getReviews();
-      const reviewsData = reviewsResponse.data || [];
+      const reviewsData = (reviewsResponse.data || []).slice(0, 20);
       setReviews(reviewsData);
 
       // Fetch authentication records for reviews
@@ -104,7 +100,15 @@ const EnhancedReviewAuth = () => {
       const authResults = await Promise.all(authPromises);
       const validAuthRecords = authResults.filter(record => record !== null && record.reviewId);
       setAuthRecords(validAuthRecords);
-      
+
+      // Auto-authenticate any review without an auth record
+      const authedIds = validAuthRecords.map(r => r.reviewId);
+      for (const review of reviewsData) {
+        if (review && review._id && !authedIds.includes(review._id)) {
+          await authenticateReview(review._id);
+        }
+      }
+
       calculateStats(validAuthRecords);
       await fetchDailyTrends(); // Fetch analytics data
       setLoading(false);
@@ -232,22 +236,16 @@ const EnhancedReviewAuth = () => {
   const approveReview = async (reviewId) => {
     try {
       setButtonLoading(prev => ({ ...prev, [`approve_${reviewId}`]: true }));
-      
-      // Find the auth record for this review - try multiple matching strategies
       let authRecord = authRecords.find(auth => auth && auth.reviewId === reviewId);
-      
-      // If not found, try matching with reviewId as ObjectId string
       if (!authRecord) {
         authRecord = authRecords.find(auth => auth && auth.reviewId && auth.reviewId.toString() === reviewId.toString());
       }
-      
-      // If still not found, try matching with review._id
       if (!authRecord) {
         authRecord = authRecords.find(auth => auth && auth.reviewId && auth.reviewId._id === reviewId);
       }
-      
-      if (!authRecord) {
+      if (!authRecord || !authRecord._id) {
         showToast('Authentication record not found for this review', 'error');
+        console.error('approveReview: authRecord missing or has no _id', { reviewId, authRecord });
         return;
       }
 
@@ -287,8 +285,9 @@ const EnhancedReviewAuth = () => {
         authRecord = authRecords.find(auth => auth && auth.reviewId && auth.reviewId._id === reviewId);
       }
       
-      if (!authRecord) {
+      if (!authRecord || !authRecord._id) {
         showToast('Authentication record not found for this review', 'error');
+        console.error('rejectReview: authRecord missing or has no _id', { reviewId, authRecord });
         return;
       }
 
@@ -328,8 +327,9 @@ const EnhancedReviewAuth = () => {
         authRecord = authRecords.find(auth => auth && auth.reviewId && auth.reviewId._id === reviewId);
       }
       
-      if (!authRecord) {
+      if (!authRecord || !authRecord._id) {
         showToast('Authentication record not found for this review', 'error');
+        console.error('escalateReview: authRecord missing or has no _id', { reviewId, authRecord });
         return;
       }
 
@@ -369,8 +369,9 @@ const EnhancedReviewAuth = () => {
         authRecord = authRecords.find(auth => auth && auth.reviewId && auth.reviewId._id === reviewId);
       }
       
-      if (!authRecord) {
+      if (!authRecord || !authRecord._id) {
         showToast('Authentication record not found for this review', 'error');
+        console.error('markFraudulent: authRecord missing or has no _id', { reviewId, authRecord });
         return;
       }
 
@@ -394,245 +395,230 @@ const EnhancedReviewAuth = () => {
   };
 
   // Selection Functions
-  const toggleReviewSelection = (reviewId) => {
-    setSelectedReviews(prev => {
-      if (prev.includes(reviewId)) {
-        return prev.filter(id => id !== reviewId);
-      } else {
-        return [...prev, reviewId];
-      }
-    });
-  };
-
-  const handleSelectAll = () => {
-    if (selectAll) {
-      setSelectedReviews([]);
-      setSelectAll(false);
-    } else {
-      const allFilteredIds = filteredReviews.map(review => review._id);
-      setSelectedReviews(allFilteredIds);
-      setSelectAll(true);
-    }
-  };
+  // 1. Remove these state lines:
+  // const [selectedReviews, setSelectedReviews] = useState([]);
+  // const [selectAll, setSelectAll] = useState(false);
+  // 2. Remove toggleReviewSelection, handleSelectAll, clearSelection, bulkApprove, bulkReject, bulkEscalate, bulkMarkFraudulent functions.
+  // 3. Remove the checkbox input from the review card UI.
 
   // Clear selection when filters change
-  const clearSelection = () => {
-    setSelectedReviews([]);
-    setSelectAll(false);
-  };
+  // const clearSelection = () => {
+  //   setSelectedReviews([]);
+  //   setSelectAll(false);
+  // };
 
   // Bulk Action Functions
-  const bulkApprove = async () => {
-    if (selectedReviews.length === 0) {
-      showToast('No reviews selected for bulk approval', 'warning');
-      return;
-    }
+  // const bulkApprove = async () => {
+  //   if (selectedReviews.length === 0) {
+  //     showToast('No reviews selected for bulk approval', 'warning');
+  //     return;
+  //   }
 
-    try {
-      setButtonLoading(prev => ({ ...prev, bulkApprove: true }));
+  //   try {
+  //     setButtonLoading(prev => ({ ...prev, bulkApprove: true }));
       
-      const results = [];
-      for (const reviewId of selectedReviews) {
-        try {
-          const authRecord = authRecords.find(auth => auth && auth.reviewId === reviewId);
-          if (!authRecord) {
-            results.push({ reviewId, success: false, error: 'No auth record found' });
-            continue;
-          }
+  //     const results = [];
+  //     for (const reviewId of selectedReviews) {
+  //       try {
+  //         const authRecord = authRecords.find(auth => auth && auth.reviewId === reviewId);
+  //         if (!authRecord) {
+  //           results.push({ reviewId, success: false, error: 'No auth record found' });
+  //           continue;
+  //         }
 
-          const decision = {
-            status: 'authentic',
-            confidence: 95,
-            reasoning: 'Bulk approved by administrator',
-            decidedBy: 'admin',
-            decidedAt: new Date()
-          };
+  //         const decision = {
+  //           status: 'authentic',
+  //           confidence: 95,
+  //           reasoning: 'Bulk approved by administrator',
+  //           decidedBy: 'admin',
+  //           decidedAt: new Date()
+  //         };
 
-          const response = await apiService.updateReviewDecision(authRecord._id, decision);
-          results.push({ reviewId, success: true, data: response.data });
-        } catch (error) {
-          results.push({ reviewId, success: false, error: error.message });
-        }
-      }
+  //         const response = await apiService.updateReviewDecision(authRecord._id, decision);
+  //         results.push({ reviewId, success: true, data: response.data });
+  //       } catch (error) {
+  //         results.push({ reviewId, success: false, error: error.message });
+  //       }
+  //     }
 
-      const successful = results.filter(r => r.success).length;
-      const failed = results.length - successful;
+  //     const successful = results.filter(r => r.success).length;
+  //     const failed = results.length - successful;
       
-      if (failed > 0) {
-        showToast(`Bulk approve completed: ${successful} successful, ${failed} failed`, 'warning');
-      } else {
-        showToast(`Successfully approved ${successful} reviews ✅`, 'success');
-      }
-      
-
-      clearSelection();
-      await fetchReviewData();
-    } catch (error) {
-      console.error('Error in bulk approve:', error);
-      showToast('Bulk approve operation failed', 'error');
-    } finally {
-      setButtonLoading(prev => ({ ...prev, bulkApprove: false }));
-    }
-  };
-
-  const bulkReject = async () => {
-    if (selectedReviews.length === 0) {
-      showToast('No reviews selected for bulk rejection', 'warning');
-      return;
-    }
-
-    try {
-      setButtonLoading(prev => ({ ...prev, bulkReject: true }));
-      
-      const results = [];
-      for (const reviewId of selectedReviews) {
-        try {
-          const authRecord = authRecords.find(auth => auth && auth.reviewId === reviewId);
-          if (!authRecord) {
-            results.push({ reviewId, success: false, error: 'No auth record found' });
-            continue;
-          }
-
-          const decision = {
-            status: 'suspicious',
-            confidence: 85,
-            reasoning: 'Bulk rejected by administrator',
-            decidedBy: 'admin',
-            decidedAt: new Date()
-          };
-
-          const response = await apiService.updateReviewDecision(authRecord._id, decision);
-          results.push({ reviewId, success: true, data: response.data });
-        } catch (error) {
-          results.push({ reviewId, success: false, error: error.message });
-        }
-      }
-
-      const successful = results.filter(r => r.success).length;
-      const failed = results.length - successful;
-      
-      if (failed > 0) {
-        showToast(`Bulk reject completed: ${successful} successful, ${failed} failed`, 'warning');
-      } else {
-        showToast(`Successfully rejected ${successful} reviews ❌`, 'warning');
-      }
+  //     if (failed > 0) {
+  //       showToast(`Bulk approve completed: ${successful} successful, ${failed} failed`, 'warning');
+  //     } else {
+  //       showToast(`Successfully approved ${successful} reviews ✅`, 'success');
+  //     }
       
 
-      clearSelection();
-      await fetchReviewData();
-    } catch (error) {
-      console.error('Error in bulk reject:', error);
-      showToast('Bulk reject operation failed', 'error');
-    } finally {
-      setButtonLoading(prev => ({ ...prev, bulkReject: false }));
-    }
-  };
+  //     clearSelection();
+  //     await fetchReviewData();
+  //   } catch (error) {
+  //     console.error('Error in bulk approve:', error);
+  //     showToast('Bulk approve operation failed', 'error');
+  //   } finally {
+  //     setButtonLoading(prev => ({ ...prev, bulkApprove: false }));
+  //   }
+  // };
 
-  const bulkEscalate = async () => {
-    if (selectedReviews.length === 0) {
-      showToast('No reviews selected for bulk escalation', 'warning');
-      return;
-    }
+  // const bulkReject = async () => {
+  //   if (selectedReviews.length === 0) {
+  //     showToast('No reviews selected for bulk rejection', 'warning');
+  //     return;
+  //   }
 
-    try {
-      setButtonLoading(prev => ({ ...prev, bulkEscalate: true }));
+  //   try {
+  //     setButtonLoading(prev => ({ ...prev, bulkReject: true }));
       
-      const results = [];
-      for (const reviewId of selectedReviews) {
-        try {
-          const authRecord = authRecords.find(auth => auth && auth.reviewId === reviewId);
-          if (!authRecord) {
-            results.push({ reviewId, success: false, error: 'No auth record found' });
-            continue;
-          }
+  //     const results = [];
+  //     for (const reviewId of selectedReviews) {
+  //       try {
+  //         const authRecord = authRecords.find(auth => auth && auth.reviewId === reviewId);
+  //         if (!authRecord) {
+  //           results.push({ reviewId, success: false, error: 'No auth record found' });
+  //           continue;
+  //         }
 
-          const decision = {
-            status: 'requires_investigation',
-            confidence: 70,
-            reasoning: 'Bulk escalated by administrator',
-            decidedBy: 'admin',
-            decidedAt: new Date()
-          };
+  //         const decision = {
+  //           status: 'suspicious',
+  //           confidence: 85,
+  //           reasoning: 'Bulk rejected by administrator',
+  //           decidedBy: 'admin',
+  //           decidedAt: new Date()
+  //         };
 
-          const response = await apiService.updateReviewDecision(authRecord._id, decision);
-          results.push({ reviewId, success: true, data: response.data });
-        } catch (error) {
-          results.push({ reviewId, success: false, error: error.message });
-        }
-      }
+  //         const response = await apiService.updateReviewDecision(authRecord._id, decision);
+  //         results.push({ reviewId, success: true, data: response.data });
+  //       } catch (error) {
+  //         results.push({ reviewId, success: false, error: error.message });
+  //       }
+  //     }
 
-      const successful = results.filter(r => r.success).length;
-      const failed = results.length - successful;
+  //     const successful = results.filter(r => r.success).length;
+  //     const failed = results.length - successful;
       
-      if (failed > 0) {
-        showToast(`Bulk escalate completed: ${successful} successful, ${failed} failed`, 'warning');
-      } else {
-        showToast(`Successfully escalated ${successful} reviews ⚠️`, 'warning');
-      }
-      
-
-      clearSelection();
-      await fetchReviewData();
-    } catch (error) {
-      console.error('Error in bulk escalate:', error);
-      showToast('Bulk escalate operation failed', 'error');
-    } finally {
-      setButtonLoading(prev => ({ ...prev, bulkEscalate: false }));
-    }
-  };
-
-  const bulkMarkFraudulent = async () => {
-    if (selectedReviews.length === 0) {
-      showToast('No reviews selected for bulk fraud marking', 'warning');
-      return;
-    }
-
-    try {
-      setButtonLoading(prev => ({ ...prev, bulkMarkFraudulent: true }));
-      
-      const results = [];
-      for (const reviewId of selectedReviews) {
-        try {
-          const authRecord = authRecords.find(auth => auth && auth.reviewId === reviewId);
-          if (!authRecord) {
-            results.push({ reviewId, success: false, error: 'No auth record found' });
-            continue;
-          }
-
-          const decision = {
-            status: 'fake',
-            confidence: 95,
-            reasoning: 'Bulk marked as fraudulent by administrator',
-            decidedBy: 'admin',
-            decidedAt: new Date()
-          };
-
-          const response = await apiService.updateReviewDecision(authRecord._id, decision);
-          results.push({ reviewId, success: true, data: response.data });
-        } catch (error) {
-          results.push({ reviewId, success: false, error: error.message });
-        }
-      }
-
-      const successful = results.filter(r => r.success).length;
-      const failed = results.length - successful;
-      
-      if (failed > 0) {
-        showToast(`Bulk fraud marking completed: ${successful} successful, ${failed} failed`, 'warning');
-      } else {
-        showToast(`Successfully marked ${successful} reviews as fraudulent 🚨`, 'error');
-      }
+  //     if (failed > 0) {
+  //       showToast(`Bulk reject completed: ${successful} successful, ${failed} failed`, 'warning');
+  //     } else {
+  //       showToast(`Successfully rejected ${successful} reviews ❌`, 'warning');
+  //     }
       
 
-      clearSelection();
-      await fetchReviewData();
-    } catch (error) {
-      console.error('Error in bulk mark fraudulent:', error);
-      showToast('Bulk fraud marking operation failed', 'error');
-    } finally {
-      setButtonLoading(prev => ({ ...prev, bulkMarkFraudulent: false }));
-    }
-  };
+  //     clearSelection();
+  //     await fetchReviewData();
+  //   } catch (error) {
+  //     console.error('Error in bulk reject:', error);
+  //     showToast('Bulk reject operation failed', 'error');
+  //   } finally {
+  //     setButtonLoading(prev => ({ ...prev, bulkReject: false }));
+  //   }
+  // };
+
+  // const bulkEscalate = async () => {
+  //   if (selectedReviews.length === 0) {
+  //     showToast('No reviews selected for bulk escalation', 'warning');
+  //     return;
+  //   }
+
+  //   try {
+  //     setButtonLoading(prev => ({ ...prev, bulkEscalate: true }));
+      
+  //     const results = [];
+  //     for (const reviewId of selectedReviews) {
+  //       try {
+  //         const authRecord = authRecords.find(auth => auth && auth.reviewId === reviewId);
+  //         if (!authRecord) {
+  //           results.push({ reviewId, success: false, error: 'No auth record found' });
+  //           continue;
+  //         }
+
+  //         const decision = {
+  //           status: 'requires_investigation',
+  //           confidence: 70,
+  //           reasoning: 'Bulk escalated by administrator',
+  //           decidedBy: 'admin',
+  //           decidedAt: new Date()
+  //         };
+
+  //         const response = await apiService.updateReviewDecision(authRecord._id, decision);
+  //         results.push({ reviewId, success: true, data: response.data });
+  //       } catch (error) {
+  //         results.push({ reviewId, success: false, error: error.message });
+  //       }
+  //     }
+
+  //     const successful = results.filter(r => r.success).length;
+  //     const failed = results.length - successful;
+      
+  //     if (failed > 0) {
+  //       showToast(`Bulk escalate completed: ${successful} successful, ${failed} failed`, 'warning');
+  //     } else {
+  //       showToast(`Successfully escalated ${successful} reviews ⚠️`, 'warning');
+  //     }
+      
+
+  //     clearSelection();
+  //     await fetchReviewData();
+  //   } catch (error) {
+  //     console.error('Error in bulk escalate:', error);
+  //     showToast('Bulk escalate operation failed', 'error');
+  //   } finally {
+  //     setButtonLoading(prev => ({ ...prev, bulkEscalate: false }));
+  //   }
+  // };
+
+  // const bulkMarkFraudulent = async () => {
+  //   if (selectedReviews.length === 0) {
+  //     showToast('No reviews selected for bulk fraud marking', 'warning');
+  //     return;
+  // }
+
+  //   try {
+  //     setButtonLoading(prev => ({ ...prev, bulkMarkFraudulent: true }));
+      
+  //     const results = [];
+  //     for (const reviewId of selectedReviews) {
+  //       try {
+  //         const authRecord = authRecords.find(auth => auth && auth.reviewId === reviewId);
+  //         if (!authRecord) {
+  //           results.push({ reviewId, success: false, error: 'No auth record found' });
+  //           continue;
+  //         }
+
+  //         const decision = {
+  //           status: 'fake',
+  //           confidence: 95,
+  //           reasoning: 'Bulk marked as fraudulent by administrator',
+  //           decidedBy: 'admin',
+  //           decidedAt: new Date()
+  //         };
+
+  //         const response = await apiService.updateReviewDecision(authRecord._id, decision);
+  //         results.push({ reviewId, success: true, data: response.data });
+  //       } catch (error) {
+  //         results.push({ reviewId, success: false, error: error.message });
+  //       }
+  //     }
+
+  //     const successful = results.filter(r => r.success).length;
+  //     const failed = results.length - successful;
+      
+  //     if (failed > 0) {
+  //       showToast(`Bulk fraud marking completed: ${successful} successful, ${failed} failed`, 'warning');
+  //     } else {
+  //       showToast(`Successfully marked ${successful} reviews as fraudulent 🚨`, 'error');
+  //     }
+      
+
+  //     clearSelection();
+  //     await fetchReviewData();
+  //   } catch (error) {
+  //     console.error('Error in bulk mark fraudulent:', error);
+  //     showToast('Bulk fraud marking operation failed', 'error');
+  //   } finally {
+  //     setButtonLoading(prev => ({ ...prev, bulkMarkFraudulent: false }));
+  //   }
+  // };
 
   const getStatusColor = (status) => {
     const colors = {
@@ -743,85 +729,6 @@ const EnhancedReviewAuth = () => {
           <p className="text-gray-600 dark:text-gray-300 mt-2">Multi-step verification and credibility assessment for reviews</p>
         </div>
 
-        {/* Enhanced Analytics Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
-            <div className="flex items-center">
-              <div className="p-2 rounded-full bg-blue-100 dark:bg-blue-900">
-                <span className="text-blue-600 dark:text-blue-400 text-xl"></span>
-              </div>
-              <div className="ml-4">
-                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Reviews</h3>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{analytics.totalReviews}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
-            <div className="flex items-center">
-              <div className="p-2 rounded-full bg-green-100 dark:bg-green-900">
-                <span className="text-green-600 dark:text-green-400 text-xl"></span>
-              </div>
-              <div className="ml-4">
-                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Authenticated</h3>
-                <p className="text-2xl font-bold text-green-600 dark:text-green-400">{analytics.authenticatedPercentage}%</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
-            <div className="flex items-center">
-              <div className="p-2 rounded-full bg-yellow-100 dark:bg-yellow-900">
-                <span className="text-yellow-600 dark:text-yellow-400 text-xl"></span>
-              </div>
-              <div className="ml-4">
-                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Suspicious</h3>
-                <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{analytics.suspiciousPercentage}%</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
-            <div className="flex items-center">
-              <div className="p-2 rounded-full bg-red-100 dark:bg-red-900">
-                <span className="text-red-600 dark:text-red-400 text-xl"></span>
-              </div>
-              <div className="ml-4">
-                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Fake</h3>
-                <p className="text-2xl font-bold text-red-600 dark:text-red-400">{analytics.fakePercentage}%</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
-            <div className="flex items-center">
-              <div className="p-2 rounded-full bg-indigo-100 dark:bg-indigo-900">
-                <span className="text-indigo-600 dark:text-indigo-400 text-xl"></span>
-              </div>
-              <div className="ml-4">
-                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Avg Score</h3>
-                <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{analytics.averageScore}%</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
-            <div className="flex items-center">
-              <div className={`p-2 rounded-full ${analytics.trustScoreImpact >= 0 ? 'bg-green-100 dark:bg-green-900' : 'bg-red-100 dark:bg-red-900'}`}>
-                <span className={`text-xl ${analytics.trustScoreImpact >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {analytics.trustScoreImpact >= 0 ? '' : ''}
-                </span>
-              </div>
-              <div className="ml-4">
-                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Trust Impact</h3>
-                <p className={`text-2xl font-bold ${analytics.trustScoreImpact >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {analytics.trustScoreImpact >= 0 ? '+' : ''}{analytics.trustScoreImpact}%
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Advanced Filters */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-8 transition-colors duration-200">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Filters & Search</h3>
@@ -832,7 +739,7 @@ const EnhancedReviewAuth = () => {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status:</label>
               <select 
                 value={filter} 
-                onChange={(e) => { setFilter(e.target.value); clearSelection(); }}
+                onChange={(e) => { setFilter(e.target.value); }}
                 className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               >
                 <option value="all">All Reviews</option>
@@ -849,7 +756,7 @@ const EnhancedReviewAuth = () => {
               <input
                 type="text"
                 value={searchTerm}
-                onChange={(e) => { setSearchTerm(e.target.value); clearSelection(); }}
+                onChange={(e) => { setSearchTerm(e.target.value); }}
                 placeholder="Search reviewer or content..."
                 className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
               />
@@ -861,7 +768,7 @@ const EnhancedReviewAuth = () => {
               <input
                 type="date"
                 value={dateRange.from}
-                onChange={(e) => { setDateRange(prev => ({ ...prev, from: e.target.value })); clearSelection(); }}
+                onChange={(e) => { setDateRange(prev => ({ ...prev, from: e.target.value })); }}
                 className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               />
             </div>
@@ -872,7 +779,7 @@ const EnhancedReviewAuth = () => {
               <input
                 type="date"
                 value={dateRange.to}
-                onChange={(e) => { setDateRange(prev => ({ ...prev, to: e.target.value })); clearSelection(); }}
+                onChange={(e) => { setDateRange(prev => ({ ...prev, to: e.target.value })); }}
                 className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               />
             </div>
@@ -887,7 +794,6 @@ const EnhancedReviewAuth = () => {
                 setFilter('all');
                 setSearchTerm('');
                 setDateRange({ from: '', to: '' });
-                clearSelection();
               }}
               className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
             >
@@ -896,137 +802,17 @@ const EnhancedReviewAuth = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* Authentication Score Distribution */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
-            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Authentication Score Distribution</h3>
-            <Doughnut data={getAuthScoreData()} options={{ 
-              responsive: true,
-              plugins: {
-                legend: {
-                  labels: {
-                    color: document.documentElement.classList.contains('dark') ? '#ffffff' : '#000000'
-                  }
-                }
-              }
-            }} />
-          </div>
-
-          {/* Authentication Trend */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
-            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Authentication Score Trend</h3>
-            <Line data={getAuthTrendData()} options={{ 
-              responsive: true,
-              plugins: {
-                legend: {
-                  labels: {
-                    color: document.documentElement.classList.contains('dark') ? '#ffffff' : '#000000'
-                  }
-                }
-              },
-              scales: {
-                x: {
-                  ticks: {
-                    color: document.documentElement.classList.contains('dark') ? '#9ca3af' : '#6b7280'
-                  }
-                },
-                y: {
-                  ticks: {
-                    color: document.documentElement.classList.contains('dark') ? '#9ca3af' : '#6b7280'
-                  }
-                }
-              }
-            }} />
-          </div>
-        </div>
-
         {/* Review Authentication List */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow transition-colors duration-200">
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Review Authentication Management</h3>
-              {filteredReviews.length > 0 && (
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={selectAll}
-                    onChange={handleSelectAll}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <label className="text-sm text-gray-600 dark:text-gray-300">
-                    Select All ({filteredReviews.length})
-                  </label>
-                </div>
-              )}
             </div>
-            {selectedReviews.length > 0 && (
-              <div className="text-sm text-blue-600 dark:text-blue-400 font-medium">
-                {selectedReviews.length} selected
-              </div>
-            )}
+            {/* Removed selected reviews count display */}
           </div>
           
           {/* Bulk Action Toolbar */}
-          {selectedReviews.length > 0 && (
-            <div className="sticky top-0 bg-black/80 backdrop-blur-md p-3 z-50 border-b border-gray-200 dark:border-gray-600">
-              <div className="flex flex-wrap gap-3 items-center">
-                <span className="text-sm text-white font-medium">
-                  {selectedReviews.length} review{selectedReviews.length > 1 ? 's' : ''} selected:
-                </span>
-                
-                <button
-                  onClick={bulkApprove}
-                  disabled={buttonLoading.bulkApprove}
-                  className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white px-3 py-1 rounded text-sm transition-colors duration-200 flex items-center space-x-1"
-                >
-                  {buttonLoading.bulkApprove && (
-                    <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
-                  )}
-                  <span>Bulk Approve</span>
-                </button>
-                
-                <button
-                  onClick={bulkReject}
-                  disabled={buttonLoading.bulkReject}
-                  className="bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white px-3 py-1 rounded text-sm transition-colors duration-200 flex items-center space-x-1"
-                >
-                  {buttonLoading.bulkReject && (
-                    <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
-                  )}
-                  <span>Bulk Reject</span>
-                </button>
-                
-                <button
-                  onClick={bulkEscalate}
-                  disabled={buttonLoading.bulkEscalate}
-                  className="bg-yellow-500 hover:bg-yellow-600 disabled:bg-yellow-400 text-black px-3 py-1 rounded text-sm transition-colors duration-200 flex items-center space-x-1"
-                >
-                  {buttonLoading.bulkEscalate && (
-                    <div className="w-3 h-3 border border-black border-t-transparent rounded-full animate-spin"></div>
-                  )}
-                  <span>Bulk Escalate</span>
-                </button>
-                
-                <button
-                  onClick={bulkMarkFraudulent}
-                  disabled={buttonLoading.bulkMarkFraudulent}
-                  className="bg-red-800 hover:bg-red-900 disabled:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors duration-200 flex items-center space-x-1"
-                >
-                  {buttonLoading.bulkMarkFraudulent && (
-                    <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
-                  )}
-                  <span>Bulk Fraud</span>
-                </button>
-                
-                <button
-                  onClick={clearSelection}
-                  className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm transition-colors duration-200"
-                >
-                  Clear Selection
-                </button>
-              </div>
-            </div>
-          )}
+          {/* Removed bulk action toolbar */}
           <div className="p-6">
             {filteredReviews.length === 0 ? (
               <div className="text-center text-gray-500 dark:text-gray-400 py-8">
@@ -1060,15 +846,6 @@ const EnhancedReviewAuth = () => {
                     <div key={review._id} className={`rounded-lg p-4 transition-colors duration-200 ${getReviewBackgroundColor(authRecord?.status)}`}>
                       <div className="flex items-start justify-between">
                         <div className="flex items-start space-x-3 flex-1">
-                          {/* Individual Review Checkbox */}
-                          <div className="mt-1">
-                            <input
-                              type="checkbox"
-                              checked={selectedReviews.includes(review._id)}
-                              onChange={() => toggleReviewSelection(review._id)}
-                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                            />
-                          </div>
                           
                           <div className="flex-1">
                             <div className="flex items-center space-x-2 mb-2">
@@ -1121,78 +898,20 @@ const EnhancedReviewAuth = () => {
                           {authRecord && (
                             <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-gray-200 dark:border-gray-600">
                               <button
-                                onClick={() => approveReview(review._id)}
-                                disabled={buttonLoading[`approve_${review._id}`]}
-                                className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white text-sm px-3 py-1 rounded transition-colors duration-200 flex items-center space-x-1"
+                                onClick={() => viewAuthDetails(review._id)}
+                                disabled={buttonLoading[`details_${review._id}`]}
+                                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm rounded transition-colors duration-200 flex items-center space-x-1"
                               >
-                                {buttonLoading[`approve_${review._id}`] && (
+                                {buttonLoading[`details_${review._id}`] && (
                                   <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
                                 )}
-                                <span>Approve</span>
-                              </button>
-                              
-                              <button
-                                onClick={() => rejectReview(review._id)}
-                                disabled={buttonLoading[`reject_${review._id}`]}
-                                className="bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white text-sm px-3 py-1 rounded transition-colors duration-200 flex items-center space-x-1"
-                              >
-                                {buttonLoading[`reject_${review._id}`] && (
-                                  <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
-                                )}
-                                <span>Reject</span>
-                              </button>
-                              
-                              <button
-                                onClick={() => escalateReview(review._id)}
-                                disabled={buttonLoading[`escalate_${review._id}`]}
-                                className="bg-yellow-500 hover:bg-yellow-600 disabled:bg-yellow-400 text-black text-sm px-3 py-1 rounded transition-colors duration-200 flex items-center space-x-1"
-                              >
-                                {buttonLoading[`escalate_${review._id}`] && (
-                                  <div className="w-3 h-3 border border-black border-t-transparent rounded-full animate-spin"></div>
-                                )}
-                                <span>Escalate</span>
-                              </button>
-                              
-                              <button
-                                onClick={() => markFraudulent(review._id)}
-                                disabled={buttonLoading[`fraud_${review._id}`]}
-                                className="bg-red-800 hover:bg-red-900 disabled:bg-red-600 text-white text-sm px-3 py-1 rounded transition-colors duration-200 flex items-center space-x-1"
-                              >
-                                {buttonLoading[`fraud_${review._id}`] && (
-                                  <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
-                                )}
-                                <span>Mark Fraudulent</span>
+                                <span>View Details</span>
                               </button>
                             </div>
                           )}
                           </div>
                         </div>
                         
-                        <div className="flex space-x-2 ml-4">
-                          {authRecord ? (
-                            <button
-                              onClick={() => viewAuthDetails(review._id)}
-                              disabled={buttonLoading[`details_${review._id}`]}
-                              className="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm rounded transition-colors duration-200 flex items-center space-x-1"
-                            >
-                              {buttonLoading[`details_${review._id}`] && (
-                                <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
-                              )}
-                              <span>View Details</span>
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => authenticateReview(review._id)}
-                              disabled={buttonLoading[review._id]}
-                              className="px-3 py-1 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white text-sm rounded transition-colors duration-200 flex items-center space-x-1"
-                            >
-                              {buttonLoading[review._id] && (
-                                <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
-                              )}
-                              <span>Authenticate</span>
-                            </button>
-                          )}
-                        </div>
                       </div>
                     </div>
                   );

@@ -1,256 +1,280 @@
-# TRUSTLENS - AI-Powered Trust & Safety Platform
+# TrustLens – AI-Powered E-commerce Trust Platform
 
-![TRUSTLENS Logo](TrustLensLogo.jpeg)
+![Trust & Safety](https://img.shields.io/badge/Trust%20&%20Safety-🛡️-green)
 
-TRUSTLENS is a comprehensive AI-powered trust and safety platform designed to enhance marketplace security through advanced fraud detection, counterfeit prevention, and review authenticity verification. The platform leverages cutting-edge machine learning models to analyze patterns in ratings, reviews, and product listings while providing real-time monitoring of the complete product lifecycle.
+## 🚀 Overview
+
+TrustLens is a scalable, AI-driven e-commerce platform designed to build and maintain trust in online marketplaces. With advanced features like review authentication, fraud detection, community validation, and trust-centric analytics, it empowers vendors, customers, and administrators to interact safely and transparently.
 
 ## ✨ Key Features
 
-### 🤖 AI-Powered Detection
-- **Real-time fraud detection** with 95% accuracy
-- **Behavioral biometrics** analysis (typing patterns, mouse movements)
-- **NLP-powered review authentication** using HuggingFace Transformers
-- **Computer vision** for image authenticity verification
-- **Predictive trust scoring** with explainable AI
+### 🏛️ Core Platform
+- **Role-based authentication** (Admin, Vendor, Customer)
+- **Real-time trust scoring** and fraud detection
+- **AI-powered review analysis** and authenticity verification
+- **Community-driven validation** system
+- **Product lifecycle tracking** and audit trails
+- **Comprehensive alert** and notification system
 
-### 📊 Comprehensive Dashboard
-- **8 integrated modules** for complete marketplace oversight
-- **Real-time trust metrics** with live updates via WebSocket
-- **Multi-role interfaces** (buyers, sellers, administrators)
-- **Interactive data visualization** with charts and analytics
-- **Dark/Light mode** support with responsive design
+### 🏪 For Vendors
+- **Secure vendor authentication** and onboarding
+- **Product management** (add, update, delete)
+- **Real-time alerts** for suspicious behavior
+- **Revenue analytics** and return rate tracking
+- **Order management** and customer behavior insights
+- **Trust score monitoring** and reputation guidance
 
-### 🔄 Real-Time Processing
-- **Sub-200ms response time** for trust decisions
-- **Live behavioral tracking** and anomaly detection
-- **Instant alert system** with severity classification
-- **WebSocket integration** for real-time dashboard updates
+### 🛒 For Customers
+- **Product browsing** and secure ordering
+- **Vendor profile trust** verification
+- **Order history** and status tracking
+- **Review writing** with authenticity scoring
+- **Personalized recommendations** based on behavioral signals
 
-### 🏛️ Community Features
-- **Community validation system** with consensus algorithms
-- **Gamified prediction markets** for fraud likelihood
-- **Reward mechanisms** for accurate validators
-- **Crowd-sourced verification** with AI assistance
+### 👨‍💼 For Administrators
+- **Full admin dashboard** for system monitoring
+- **Platform-wide fraud alerts** and behavioral insights
+- **Community validation** and review authentication control
+- **Role management** and vendor/customer tracking
+- **AI-based trust DNA** profiling
 
-## 📸 Screenshots
+## 🏗️ Technical Architecture
 
-### Dashboard Overview
-![Dashboard](Dashboard1.png)
-![Dashboard](Dashboard2.png)
+### Backend (Node.js / Express)
+- **RESTful API** structure
+- **MongoDB Atlas** integration with Mongoose
+- **JWT-based** role authentication
+- **Socket.io** for real-time WebSocket communication
+- **Modular controller/service** architecture
 
-### AI-Powered TrustDNA Analysis
-![TrustDNA](TrustDna.png)
+### Frontend (React.js)
+- **Responsive component-based** UI
+- **Tailwind CSS** for consistent styling
+- **React Router** for role-based navigation
+- **Context API** for state and role management
+- **Axios** for secured API communication
 
-### Product Tracker
-![Product Tracker](ProductTracker1.png)
-![Product Tracker](ProductTracker2.png)
+### AI & Analytics
+- **AI analyzer** for review authenticity scoring
+- **Behavioral analysis** and trust score calculation
+- **Community validation** aggregation
+- **Prediction markets** and fraud likelihood modeling
 
-### Review Authentication System
-![Review Auth](ReviewAuth1.png)
-![Review Auth](ReviewAuth2.png)
+## 📊 Database Schema (MongoDB Collections)
 
-### Marketplace Simulator
-![Marketplace](Marketplace.png)
-![Marketplace](Marketplace2.png)
+| Collection | Description |
+|------------|-------------|
+| `users` | Customer profiles, behavior data, trust scores |
+| `vendors` | Vendor accounts, return rates, trust metrics |
+| `products` | Product catalog, lifecycle, vendor links |
+| `orders` | Order lifecycle, fraud/risk analytics |
+| `reviews` | Review content with AI-generated authenticity scores |
+| `alerts` | Real-time alerts triggered by trust analysis |
+| `admins` | Administrative control users |
 
-### Alert System
-![Alert](Alert1.png)
-![Alert](Alert2.png)
-
-### Community Validation
-![Community Validation](CommunityValidation.png)
-
-### Dark/Light Mode Support
-![Themes](LightMode.png)
-
-
-## 🏗️ Architecture
-
-### Frontend
-- **React.js** with modern hooks and context
-- **TailwindCSS** for responsive styling
-- **Chart.js/Recharts** for data visualization
-- **Socket.IO Client** for real-time updates
-
-### Backend
-- **Node.js + Express.js** RESTful API
-- **Socket.IO** for WebSocket communication
-- **JWT Authentication** and middleware
-- **Rate limiting** and security measures
-
-### AI/ML Stack
-- **HuggingFace Transformers** for NLP processing
-- **Custom behavioral analytics** algorithms
-- **Computer vision** for image forensics
-- **Multi-modal AI fusion** engine
-
-### Database
-- **MongoDB** for primary data storage
-- **Real-time aggregation** pipelines
-- **Optimized indexing** for performance
-
-## 🛠️ Tech Stack
-
-```
-Frontend:  React.js, TailwindCSS, Chart.js, Socket.IO Client
-Backend:   Node.js, Express.js, Socket.IO, JWT
-AI/ML:     HuggingFace APIs, NLP, Computer Vision, Behavioral Analytics
-Database:  MongoDB, Aggregation Pipelines
-Tools:     Git, npm, Postman, VS Code
-```
-
-## 📦 Installation
+## 📦 Installation & Setup
 
 ### Prerequisites
-- Node.js (v16 or higher)
-- MongoDB (v5.0 or higher)
-- npm or yarn package manager
+- Node.js (v14 or higher)
+- MongoDB Atlas account
+- npm or yarn
 
-### Setup Instructions
+### Backend Setup
 
-1. **Clone the repository**
-```bash
-git clone https://github.com/yourusername/trustlens.git
-cd trustlens
+1. **Navigate to backend directory**
 ```
-
-2. **Install dependencies**
-```bash
-# Install backend dependencies
 cd backend
 npm install
-
-# Install frontend dependencies
-cd ../frontend
-npm install
 ```
 
-3. **Environment Configuration**
-```bash
-# Backend environment (.env)
-cd backend
-cp .env.example .env
+2. **Create a .env file:**
 ```
-
-Edit `.env` with your configuration:
-```env
+MONGODB_URI=your_mongo_uri_here
+JWT_SECRET=your_jwt_secret_key
 PORT=3001
-MONGODB_URI=mongodb://localhost:27017/trustlens
-JWT_SECRET=your_jwt_secret_here
-HUGGINGFACE_API_KEY=your_huggingface_api_key
-NODE_ENV=development
 ```
 
-4. **Start MongoDB**
-```bash
-# Using MongoDB service
-sudo systemctl start mongod
-
-# Or using Docker
-docker run -d -p 27017:27017 --name mongodb mongo:latest
+3. **Start the backend server:**
 ```
-
-5. **Run the application**
-```bash
-# Start backend server
-cd backend
-npm run dev
-
-# Start frontend (in new terminal)
-cd frontend
 npm start
 ```
 
-6. **Access the application**
+### Frontend Setup
+
+1. **Navigate to frontend directory**
+```
+cd frontend
+npm install
+npm start
+```
+
+2. **Access the application**
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:3001
 
-## 🎯 Usage
+## 🔑 Default Login Credentials
 
-### Dashboard Navigation
-1. **Trust Dashboard** - Real-time marketplace metrics and analytics
-2. **TrustDNA** - Advanced user behavioral analysis and profiling
-3. **Product Tracker** - Complete product lifecycle monitoring
-4. **Review Auth** - Multi-step review authentication system
-5. **Marketplace** - Fraud simulation and detection testing
-6. **Prediction Market** - AI-powered behavior prediction betting
-7. **Alert System** - Comprehensive security alert management
-8. **Community Validation** - Crowd-sourced verification interface
+### Admin
+- **Email:** admin@trustlens.com
+- **Password:** admin123
 
-### API Endpoints
+### Vendors
+- kriti@kritienterprises.com (Mumbai)
+- dev@develectronics.in (Bangalore)
+- mehul@fashionhub.in (Delhi)
+- **Password for all:** password123
 
-#### User Management
+### Customers
+- vaibhav@gmail.com (Pune)
+- leena@gmail.com (Chennai)
+- shamita@gmail.com (Hyderabad)
+- **Password for all:** password123
+
+---
+
+## 🎛️ Dashboards Overview
+
+### 👨‍💼 Admin Dashboard
+
+> Full administrative control panel including fraud insights, community validation review flow, and platform-wide trust scoring.
+
+![](assets/AdminDashboard.png)
+![](assets/TrustDna.png)
+![](assets/ProductTracker1.png)
+![](assets/ProductTracker2.png)
+![](assets/ProductTracker3.png)
+![](assets/ReviewAuth1.png)
+![](assets/ReviewAuth2.png)
+![](assets/Marketplace1.png)
+![](assets/PredictionMarket.png)
+![](assets/AlertSystem1.png)
+![](assets/AlertSystem2.png)
+![](assets/CommunityValidation.png)
+
+---
+
+### 🧑‍💼 Vendor Dashboard
+
+> Vendors can manage product inventory, monitor alerts, and track warehouse activity in real-time.
+
+![](assets/Vendor Dashboard.png)
+![](assets/VendorAlertDashboard.png) 
+
+---
+
+### 🛍️ Customer Dashboard
+
+> Customers can browse, review products, track orders, and validate vendor trust before purchasing.
+
+![](assets/CustomerDashboard.png) 
+![](assets/CustomerBrowseProduct.png)
+
+---
+
+## 🔌 API Endpoints Overview
+
+### Authentication
 ```
-GET    /api/users           - List all users
-POST   /api/users           - Create new user
-GET    /api/users/:id       - Get user details
-PUT    /api/users/:id       - Update user
+POST /api/auth/register     – Register a customer
+POST /api/auth/login        – Customer login
+POST /api/vendor/register   – Vendor registration
+POST /api/vendor/login      – Vendor login
+POST /api/admin/login       – Admin login
 ```
 
-#### Reviews & Authentication
+### Users & Vendors
 ```
-GET    /api/reviews                           - List reviews
-POST   /api/reviews                           - Create review with AI analysis
-POST   /api/enhanced-reviews/authenticate/:id - Enhanced authentication
-GET    /api/enhanced-reviews/summary/:id      - Authentication summary
-```
-
-#### Real-time Features
-```
-WebSocket Events:
-- trust_score_changed    - Trust score updates
-- new_alert             - Security alerts
-- marketplace_activity  - Live marketplace events
-- behavioral_update     - User behavior changes
+GET  /api/users                    – Fetch all users
+GET  /api/vendor/vendors           – Fetch all vendors
+PUT  /api/vendor/vendors/:id       – Update vendor profile
 ```
 
-### API Testing
-Use the provided Postman collection or test with curl:
-```bash
-# Test user creation
-curl -X POST http://localhost:3001/api/users \
-  -H "Content-Type: application/json" \
-  -d '{"username":"testuser","email":"test@example.com"}'
-
-# Test review analysis
-curl -X POST http://localhost:3001/api/reviews \
-  -H "Content-Type: application/json" \
-  -d '{"content":"Great product!","rating":5,"product":"product_id"}'
+### Products & Orders
+```
+GET  /api/products                 – Fetch products
+POST /api/products                 – Add product (vendor only)
+POST /api/orders                   – Place an order (customer)
+GET  /api/orders/customer/:id      – Fetch customer orders
+GET  /api/orders/vendor/:id        – Fetch vendor orders
 ```
 
-## 📈 Performance Metrics
+### Alerts & Analytics
+```
+GET /api/alerts                           – Get all alerts (admin only)
+GET /api/orders/analytics/stats           – Order statistics
+GET /api/vendor/vendors/:id/analytics     – Vendor analytics
+```
+
+## 📈 Sample Data Metrics
+
+- **14 registered users** (1 admin + 13 customers)
+- **9 active vendors** across major cities
+- **43 products** across 5 categories
+- **127+ orders** with trust data
+- **250+ verified reviews**
+- **85+ real-time alerts**
+
+## 🛠️ Technology Stack
+
+### Backend
+- **Node.js** with Express
+- **MongoDB Atlas**
+- **Mongoose** ODM
+- **JWT** Authentication
+- **bcrypt** password hashing
+- **Socket.io**
+
+### Frontend
+- **React.js**
+- **Tailwind CSS**
+- **Axios**
+- **React Router**
+- **Context API**
+
+### AI & Analytics
+- **Natural language analysis** for reviews
+- **Trust score algorithms**
+- **Prediction markets**
+- **Fraud detection systems**
+
+## 📊 Performance Metrics
 
 - **Fraud Detection Accuracy**: 95%
 - **Response Time**: <200ms for real-time decisions
 - **Scalability**: Handles 10,000+ concurrent users
-- **Uptime**: 99.9% availability target
 - **AI Processing**: Sub-100ms for NLP analysis
 
 ## 🔒 Security Features
 
-- **JWT-based authentication** with secure token management
-- **Rate limiting** to prevent API abuse
-- **Input validation** and sanitization
-- **CORS protection** for cross-origin requests
-- **Behavioral anomaly detection** for security monitoring
-- **Encrypted data transmission** via HTTPS
+- **JWT-based secure auth** per role
+- **Encrypted password storage** with bcrypt
+- **Behavior-based fraud alerts**
+- **Access control** via protected routes
+- **Real-time anomaly detection**
+
+## 🚀 Future Enhancements
+
+- **Machine learning model** fine-tuning
+- **Blockchain-based trust** ledger
+- **Mobile app** (React Native)
+- **Advanced product recommendation** engine
+- **Multi-language support**
 
 
-## 🙏 Acknowledgments
 
-- **HuggingFace** for providing state-of-the-art NLP models
-- **MongoDB** for robust database solutions
-- **React Community** for excellent frontend frameworks
-- **Open Source Contributors** for various libraries and tools
+## 👥 Team
 
-## 📞 Contact
+**Team Charon** - Developed for **HackOnWithAmazon**
 
-- **Developer**: [Vaibhav Garg]
-- **Email**: [2023ucp1659@mnit.ac.in]
-- **LinkedIn**: [www.linkedin.com/in/vaibhav-garg-1329a827b]
+### Team Members:
+- **Dev Patel**
+- **Vaibhav Garg**
+- **Kriti Bhatnagar**
+- **Mehul Goyal**
 
 ---
 
 **TRUSTLENS**: *Turning every transaction into a handshake of trust.*
 
 ![Built with Love](https://img.shields.io/badge/Built%20with-❤️-red)
+```

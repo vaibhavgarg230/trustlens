@@ -7,7 +7,7 @@ const TrustAnalyzer = require('./trustAnalyzer');
 class RealAIAnalyzer {
   constructor() {
     // Initialize HuggingFace client (free tier - no API key needed for public models)
-    this.hf = new HfInference();
+    this.hf = new HfInference(process.env.HUGGINGFACE_API_KEY);
     this.sentiment = new Sentiment();
     this.tokenizer = new natural.WordTokenizer();
     this.stemmer = natural.PorterStemmer;
@@ -16,25 +16,37 @@ class RealAIAnalyzer {
   // Real HuggingFace API integration for text analysis
   async analyzeReviewWithHuggingFace(reviewText) {
     try {
-      // Use multiple HuggingFace models for comprehensive analysis
-      const [sentimentResult, toxicityResult] = await Promise.all([
+      // Use multiple HuggingFace models for comprehensive analysis including AI detection
+      const [sentimentResult, toxicityResult, aiDetectionResult] = await Promise.all([
         this.hf.textClassification({
-          model: 'cardiffnlp/twitter-roberta-base-sentiment-latest',
+          model: 'distilbert-base-uncased-finetuned-sst-2-english',
           inputs: reviewText
         }),
         this.hf.textClassification({
-          model: 'martin-ha/toxic-comment-model',
+          model: 'unitary/toxic-bert',
           inputs: reviewText
-        })
+        }),
+        this.hf.textClassification({
+          model: 'microsoft/DialoGPT-medium', // AI text detection model
+          inputs: reviewText
+        }).catch(() => null) // Fallback if AI detection model fails
       ]);
 
       const localSentiment = this.sentiment.analyze(reviewText);
       const linguisticFeatures = this.extractAdvancedLinguisticFeatures(reviewText);
       
+      // Enhanced AI detection using HuggingFace + local patterns
+      const isAIGenerated = this.enhancedAIDetection(
+        reviewText, 
+        linguisticFeatures, 
+        aiDetectionResult
+      );
+      
       return {
         huggingFaceResults: {
           sentiment: sentimentResult,
-          toxicity: toxicityResult
+          toxicity: toxicityResult,
+          aiDetection: aiDetectionResult
         },
         localAnalysis: {
           sentiment: localSentiment,
@@ -44,16 +56,97 @@ class RealAIAnalyzer {
           sentimentResult, 
           toxicityResult, 
           localSentiment, 
-          linguisticFeatures
+          linguisticFeatures,
+          isAIGenerated
         ),
-        isAIGenerated: this.detectAIGeneratedContent(reviewText, linguisticFeatures),
-        detailedAnalysis: this.generateDetailedAnalysis(reviewText, linguisticFeatures)
+        isAIGenerated: isAIGenerated.isAIGenerated,
+        aiDetectionConfidence: isAIGenerated.confidence,
+        aiDetectionReason: isAIGenerated.reason,
+        detailedAnalysis: this.generateDetailedAnalysis(reviewText, linguisticFeatures, isAIGenerated)
       };
     } catch (error) {
       console.error('HuggingFace API error:', error);
       // Fallback to advanced local analysis
       return this.advancedLocalAnalysis(reviewText);
     }
+  }
+
+  // Enhanced AI detection combining HuggingFace and local patterns
+  enhancedAIDetection(text, linguistic, hfAIDetection = null) {
+    const localAIIndicators = [];
+    
+    // Check for gibberish first (critical)
+    const gibberishCheck = this.detectGibberish(text);
+    if (gibberishCheck.isGibberish) {
+      return {
+        isAIGenerated: true,
+        confidence: 95,
+        reason: gibberishCheck.reason,
+        source: 'local_gibberish_detection'
+      };
+    }
+    
+    // Enhanced AI detection patterns
+    const aiPatterns = this.detectAIPatterns(text);
+    localAIIndicators.push(...aiPatterns);
+    
+    // Perfect grammar/structure (AI tends to be too perfect)
+    if (linguistic.complexityMetrics.readabilityScore > 95) {
+      localAIIndicators.push('too_perfect_readability');
+    }
+    
+    // Lack of personal pronouns (AI often avoids first person)
+    const personalPronouns = (text.match(/\b(I|me|my|mine|myself)\b/gi) || []).length;
+    if (personalPronouns === 0 && text.length > 100) {
+      localAIIndicators.push('no_personal_pronouns');
+    }
+    
+    // Check for overly positive language patterns (common in AI reviews)
+    const overlyPositivePatterns = this.detectOverlyPositiveLanguage(text);
+    if (overlyPositivePatterns.length > 0) {
+      localAIIndicators.push(...overlyPositivePatterns);
+    }
+    
+    // Check for repetitive sentence structures
+    const repetitiveStructures = this.detectRepetitiveStructures(text);
+    if (repetitiveStructures) {
+      localAIIndicators.push('repetitive_sentence_structures');
+    }
+    
+    // Check for marketing language patterns
+    const marketingPatterns = this.detectMarketingLanguage(text);
+    if (marketingPatterns.length > 0) {
+      localAIIndicators.push(...marketingPatterns);
+    }
+    
+    // Combine HuggingFace AI detection with local patterns
+    let hfConfidence = 0;
+    let hfReason = '';
+    
+    if (hfAIDetection && hfAIDetection.length > 0) {
+      // Interpret HuggingFace AI detection results
+      const aiScore = hfAIDetection[0].score;
+      hfConfidence = Math.round(aiScore * 100);
+      hfReason = `HuggingFace AI detection: ${aiScore > 0.7 ? 'High' : aiScore > 0.5 ? 'Medium' : 'Low'} confidence`;
+    }
+    
+    // Calculate combined confidence
+    const localConfidence = localAIIndicators.length * 15; // 15% per indicator
+    const combinedConfidence = Math.min(95, Math.max(localConfidence, hfConfidence));
+    
+    // Determine if AI-generated based on combined evidence
+    const isAIGenerated = combinedConfidence > 60 || localAIIndicators.length >= 3;
+    
+    return {
+      isAIGenerated,
+      confidence: combinedConfidence,
+      reason: isAIGenerated ? 
+        `${hfReason}${hfReason && localAIIndicators.length > 0 ? ' + ' : ''}${localAIIndicators.join(', ')}` :
+        'No significant AI indicators detected',
+      source: 'combined_huggingface_local',
+      localIndicators: localAIIndicators,
+      hfConfidence: hfConfidence
+    };
   }
 
   // Advanced linguistic feature extraction using multiple NLP libraries
@@ -110,8 +203,13 @@ class RealAIAnalyzer {
   }
 
   // Advanced authenticity scoring using multiple factors
-  calculateAdvancedAuthenticityScore(hfSentiment, hfToxicity, localSentiment, linguistic) {
+  calculateAdvancedAuthenticityScore(hfSentiment, hfToxicity, localSentiment, linguistic, aiDetection) {
     let score = 50; // Base score
+    
+    // AI Detection Impact (Critical - can significantly reduce score)
+    if (aiDetection && aiDetection.isAIGenerated) {
+      score -= Math.min(40, aiDetection.confidence * 0.4); // Reduce score based on AI confidence
+    }
     
     // HuggingFace sentiment analysis contribution
     if (hfSentiment && hfSentiment.length > 0) {
@@ -155,6 +253,17 @@ class RealAIAnalyzer {
   detectAIGeneratedContent(text, linguistic) {
     const aiIndicators = [];
     
+    // Check for gibberish first (critical)
+    const gibberishCheck = this.detectGibberish(text);
+    if (gibberishCheck.isGibberish) {
+      aiIndicators.push('gibberish_content');
+      return true; // Immediately return true for gibberish
+    }
+    
+    // Enhanced AI detection patterns
+    const aiPatterns = this.detectAIPatterns(text);
+    aiIndicators.push(...aiPatterns);
+    
     // Perfect grammar/structure (AI tends to be too perfect)
     if (linguistic.complexityMetrics.readabilityScore > 95) {
       aiIndicators.push('too_perfect_readability');
@@ -184,7 +293,249 @@ class RealAIAnalyzer {
       aiIndicators.push('low_lexical_diversity');
     }
     
+    // Check for overly positive language patterns (common in AI reviews)
+    const overlyPositivePatterns = this.detectOverlyPositiveLanguage(text);
+    if (overlyPositivePatterns.length > 0) {
+      aiIndicators.push(...overlyPositivePatterns);
+    }
+    
+    // Check for repetitive sentence structures
+    const repetitiveStructures = this.detectRepetitiveStructures(text);
+    if (repetitiveStructures) {
+      aiIndicators.push('repetitive_sentence_structures');
+    }
+    
+    // Check for marketing language patterns
+    const marketingPatterns = this.detectMarketingLanguage(text);
+    if (marketingPatterns.length > 0) {
+      aiIndicators.push(...marketingPatterns);
+    }
+    
     return aiIndicators.length >= 2;
+  }
+
+  // Detect AI-specific patterns
+  detectAIPatterns(text) {
+    const patterns = [];
+    const lowerText = text.toLowerCase();
+    
+    // AI often uses overly descriptive language
+    const descriptivePhrases = [
+      'truly stands out', 'exactly what you want', 'cooks up beautifully',
+      'fills the kitchen with', 'turns out perfect every time',
+      'definitely a', 'highly recommended', 'lives up to its name',
+      'quality', 'essential', 'pantry essential', 'goes a long way'
+    ];
+    
+    const descriptiveCount = descriptivePhrases.filter(phrase => 
+      lowerText.includes(phrase)
+    ).length;
+    
+    if (descriptiveCount >= 3) {
+      patterns.push('overly_descriptive_language');
+    }
+    
+    // AI often uses repetitive positive adjectives
+    const positiveAdjectives = [
+      'perfect', 'beautiful', 'lovely', 'excellent', 'amazing', 'fantastic',
+      'wonderful', 'outstanding', 'superb', 'magnificent', 'splendid'
+    ];
+    
+    const adjectiveCount = positiveAdjectives.filter(adj => 
+      lowerText.includes(adj)
+    ).length;
+    
+    if (adjectiveCount >= 4) {
+      patterns.push('excessive_positive_adjectives');
+    }
+    
+    // AI often uses marketing-style language
+    const marketingPhrases = [
+      'definitely', 'highly recommended', 'essential', 'must-have',
+      'game-changer', 'worth every penny', 'best investment'
+    ];
+    
+    const marketingCount = marketingPhrases.filter(phrase => 
+      lowerText.includes(phrase)
+    ).length;
+    
+    if (marketingCount >= 2) {
+      patterns.push('marketing_language_patterns');
+    }
+    
+    return patterns;
+  }
+
+  // Detect overly positive language patterns
+  detectOverlyPositiveLanguage(text) {
+    const patterns = [];
+    const lowerText = text.toLowerCase();
+    
+    // Check for excessive exclamation marks
+    const exclamationCount = (lowerText.match(/!/g) || []).length;
+    if (exclamationCount >= 2) {
+      patterns.push('excessive_exclamations');
+    }
+    
+    // Check for overly enthusiastic language
+    const enthusiasticPhrases = [
+      'absolutely love', 'completely satisfied', 'beyond expectations',
+      'couldn\'t be happier', 'exceeded all expectations', 'perfect in every way'
+    ];
+    
+    const enthusiasticCount = enthusiasticPhrases.filter(phrase => 
+      lowerText.includes(phrase)
+    ).length;
+    
+    if (enthusiasticCount >= 2) {
+      patterns.push('overly_enthusiastic_language');
+    }
+    
+    return patterns;
+  }
+
+  // Detect repetitive sentence structures
+  detectRepetitiveStructures(text) {
+    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    if (sentences.length < 3) return false;
+    
+    // Check for sentences starting with the same words
+    const sentenceStarters = sentences.map(s => 
+      s.trim().toLowerCase().split(' ')[0]
+    );
+    
+    const starterCounts = {};
+    sentenceStarters.forEach(starter => {
+      starterCounts[starter] = (starterCounts[starter] || 0) + 1;
+    });
+    
+    const maxStarterCount = Math.max(...Object.values(starterCounts));
+    return maxStarterCount >= 3; // If 3+ sentences start with same word
+  }
+
+  // Detect marketing language patterns
+  detectMarketingLanguage(text) {
+    const patterns = [];
+    const lowerText = text.toLowerCase();
+    
+    // Marketing buzzwords
+    const buzzwords = [
+      'quality', 'premium', 'authentic', 'genuine', 'real', 'natural',
+      'organic', 'traditional', 'artisanal', 'handcrafted', 'premium quality'
+    ];
+    
+    const buzzwordCount = buzzwords.filter(word => 
+      lowerText.includes(word)
+    ).length;
+    
+    if (buzzwordCount >= 3) {
+      patterns.push('marketing_buzzwords');
+    }
+    
+    // Promotional language
+    const promotionalPhrases = [
+      'worth the price', 'good value', 'reasonable price', 'affordable luxury',
+      'investment', 'long-term', 'durable', 'lasting', 'reliable'
+    ];
+    
+    const promotionalCount = promotionalPhrases.filter(phrase => 
+      lowerText.includes(phrase)
+    ).length;
+    
+    if (promotionalCount >= 2) {
+      patterns.push('promotional_language');
+    }
+    
+    return patterns;
+  }
+
+  // Detect gibberish content
+  detectGibberish(text) {
+    // Only check for gibberish if text is long enough to be suspicious
+    if (text.length < 10) {
+      return {
+        isGibberish: false,
+        reason: null
+      };
+    }
+    
+    // Check for excessive character repetition (like "asdbsfbsf") - more specific
+    const charRepetition = /([a-zA-Z])\1{4,}/g; // Changed from 3 to 4 repetitions
+    if (charRepetition.test(text)) {
+      return {
+        isGibberish: true,
+        reason: 'Excessive character repetition detected (e.g., "asdbsfbsf")'
+      };
+    }
+    
+    // Check for keyboard smashing patterns - more specific
+    const keyboardSmash = /(qwerty|asdfgh|zxcvbn|qazwsx|edcrfv|tgbyhn|ujmikl|oplp;)/gi;
+    if (keyboardSmash.test(text.toLowerCase())) {
+      return {
+        isGibberish: true,
+        reason: 'Keyboard smashing pattern detected'
+      };
+    }
+    
+    // Check for very low vocabulary richness - more lenient
+    const words = text.split(/\s+/);
+    const uniqueWords = new Set(words.map(w => w.toLowerCase()));
+    const vocabularyRichness = uniqueWords.size / words.length;
+    
+    if (words.length > 10 && vocabularyRichness < 0.15) { // Changed from 0.2 to 0.15 and 5 to 10 words
+      return {
+        isGibberish: true,
+        reason: 'Extremely low vocabulary diversity for text length'
+      };
+    }
+    
+    // Check for excessive repetition of the same word - more lenient
+    const wordCounts = {};
+    words.forEach(word => {
+      if (word.length > 2) { // Only count words longer than 2 characters
+        wordCounts[word.toLowerCase()] = (wordCounts[word.toLowerCase()] || 0) + 1;
+      }
+    });
+    
+    const maxRepetition = Math.max(...Object.values(wordCounts));
+    if (maxRepetition > words.length * 0.5) { // Changed from 0.4 to 0.5
+      return {
+        isGibberish: true,
+        reason: 'Excessive repetition of the same word'
+      };
+    }
+    
+    // Check for non-English character patterns - more lenient
+    const nonEnglishRatio = (text.replace(/[a-zA-Z\s.,!?]/g, '').length / text.length);
+    if (nonEnglishRatio > 0.5) { // Changed from 0.3 to 0.5
+      return {
+        isGibberish: true,
+        reason: 'High ratio of non-English characters'
+      };
+    }
+    
+    // Check for alternating consonant-vowel patterns that are too regular - more specific
+    const alternatingPattern = /([bcdfghjklmnpqrstvwxyz][aeiou]){6,}/gi; // Changed from 4 to 6
+    if (alternatingPattern.test(text.toLowerCase())) {
+      return {
+        isGibberish: true,
+        reason: 'Suspicious alternating consonant-vowel pattern'
+      };
+    }
+    
+    // Check for random character sequences - more specific
+    const randomCharPattern = /[a-zA-Z]{3,}[bcdfghjklmnpqrstvwxyz]{5,}/g; // Made more specific
+    if (randomCharPattern.test(text.toLowerCase())) {
+      return {
+        isGibberish: true,
+        reason: 'Random character sequence pattern detected'
+      };
+    }
+    
+    return {
+      isGibberish: false,
+      reason: null
+    };
   }
 
   // Advanced behavioral analysis for typing patterns with IP-based trust integration
@@ -290,30 +641,47 @@ class RealAIAnalyzer {
   advancedLocalAnalysis(text) {
     const sentiment = this.sentiment.analyze(text);
     const linguistic = this.extractAdvancedLinguisticFeatures(text);
+    const aiDetection = this.enhancedAIDetection(text, linguistic, null);
     
     return {
       huggingFaceResults: null,
       localAnalysis: { sentiment, linguistic },
-      authenticityScore: this.calculateLocalAuthenticityScore(sentiment, linguistic),
-      isAIGenerated: this.detectAIGeneratedContent(text, linguistic),
-      detailedAnalysis: this.generateDetailedAnalysis(text, linguistic)
+      authenticityScore: this.calculateLocalAuthenticityScore(sentiment, linguistic, aiDetection),
+      isAIGenerated: aiDetection.isAIGenerated,
+      aiDetectionConfidence: aiDetection.confidence,
+      aiDetectionReason: aiDetection.reason,
+      detailedAnalysis: this.generateDetailedAnalysis(text, linguistic, aiDetection)
     };
   }
 
-  calculateLocalAuthenticityScore(sentiment, linguistic) {
+  calculateLocalAuthenticityScore(sentiment, linguistic, aiDetection) {
     let score = 50;
+    
+    // AI Detection Impact (Critical - can significantly reduce score)
+    if (aiDetection && aiDetection.isAIGenerated) {
+      score -= Math.min(40, aiDetection.confidence * 0.4); // Reduce score based on AI confidence
+    }
+    
     score += Math.min(20, Math.abs(sentiment.score) * 3);
     score += linguistic.complexityMetrics.lexicalDiversity * 30;
     score += Math.min(15, linguistic.semanticFeatures.emotionalWords.length * 2);
     return Math.max(0, Math.min(100, Math.round(score)));
   }
 
-  generateDetailedAnalysis(text, linguistic) {
+  generateDetailedAnalysis(text, linguistic, aiDetection) {
     return {
       textLength: text.length,
       complexity: linguistic.complexityMetrics.readabilityScore > 60 ? 'appropriate' : 'complex',
       emotionalTone: linguistic.semanticFeatures.emotionalWords.length > 2 ? 'emotional' : 'neutral',
-      writingStyle: linguistic.complexityMetrics.lexicalDiversity > 0.6 ? 'varied' : 'repetitive'
+      writingStyle: linguistic.complexityMetrics.lexicalDiversity > 0.6 ? 'varied' : 'repetitive',
+      aiDetection: aiDetection ? {
+        isAIGenerated: aiDetection.isAIGenerated,
+        confidence: aiDetection.confidence,
+        reason: aiDetection.reason,
+        source: aiDetection.source,
+        localIndicators: aiDetection.localIndicators || [],
+        hfConfidence: aiDetection.hfConfidence || 0
+      } : null
     };
   }
 

@@ -9,6 +9,95 @@ const LinguisticAnalyzer = require('../utils/linguisticAnalyzer');
 const aiAnalyzer = new RealAIAnalyzer();
 const linguisticAnalyzer = new LinguisticAnalyzer();
 
+// Enhanced gibberish detection for fallback
+function detectGibberishFallback(text) {
+  // Only check for gibberish if text is long enough to be suspicious
+  if (text.length < 10) {
+    return {
+      isGibberish: false,
+      reason: null
+    };
+  }
+  
+  // Check for excessive character repetition (like "asdbsfbsf") - more specific
+  const charRepetition = /([a-zA-Z])\1{4,}/g; // Changed from 3 to 4 repetitions
+  if (charRepetition.test(text)) {
+    return {
+      isGibberish: true,
+      reason: 'Excessive character repetition detected (e.g., "asdbsfbsf")'
+    };
+  }
+  
+  // Check for keyboard smashing patterns - more specific
+  const keyboardSmash = /(qwerty|asdfgh|zxcvbn|qazwsx|edcrfv|tgbyhn|ujmikl|oplp;)/gi;
+  if (keyboardSmash.test(text.toLowerCase())) {
+    return {
+      isGibberish: true,
+      reason: 'Keyboard smashing pattern detected'
+    };
+  }
+  
+  // Check for very low vocabulary richness - more lenient
+  const words = text.split(/\s+/);
+  const uniqueWords = new Set(words.map(w => w.toLowerCase()));
+  const vocabularyRichness = uniqueWords.size / words.length;
+  
+  if (words.length > 10 && vocabularyRichness < 0.15) { // Changed from 0.2 to 0.15 and 5 to 10 words
+    return {
+      isGibberish: true,
+      reason: 'Extremely low vocabulary diversity for text length'
+    };
+  }
+  
+  // Check for excessive repetition of the same word - more lenient
+  const wordCounts = {};
+  words.forEach(word => {
+    if (word.length > 2) { // Only count words longer than 2 characters
+      wordCounts[word.toLowerCase()] = (wordCounts[word.toLowerCase()] || 0) + 1;
+    }
+  });
+  
+  const maxRepetition = Math.max(...Object.values(wordCounts));
+  if (maxRepetition > words.length * 0.5) { // Changed from 0.4 to 0.5
+    return {
+      isGibberish: true,
+      reason: 'Excessive repetition of the same word'
+    };
+  }
+  
+  // Check for non-English character patterns - more lenient
+  const nonEnglishRatio = (text.replace(/[a-zA-Z\s.,!?]/g, '').length / text.length);
+  if (nonEnglishRatio > 0.5) { // Changed from 0.3 to 0.5
+    return {
+      isGibberish: true,
+      reason: 'High ratio of non-English characters'
+    };
+  }
+  
+  // Check for alternating consonant-vowel patterns that are too regular - more specific
+  const alternatingPattern = /([bcdfghjklmnpqrstvwxyz][aeiou]){6,}/gi; // Changed from 4 to 6
+  if (alternatingPattern.test(text.toLowerCase())) {
+    return {
+      isGibberish: true,
+      reason: 'Suspicious alternating consonant-vowel pattern'
+    };
+  }
+  
+  // Check for random character sequences - more specific
+  const randomCharPattern = /[a-zA-Z]{3,}[bcdfghjklmnpqrstvwxyz]{5,}/g; // Made more specific
+  if (randomCharPattern.test(text.toLowerCase())) {
+    return {
+      isGibberish: true,
+      reason: 'Random character sequence pattern detected'
+    };
+  }
+  
+  return {
+    isGibberish: false,
+    reason: null
+  };
+}
+
 // Create a new review with enhanced AI authenticity analysis and linguistic fingerprinting
 router.post('/', async (req, res) => {
   try {
@@ -60,14 +149,38 @@ router.post('/', async (req, res) => {
     try {
       aiAnalysis = await aiAnalyzer.analyzeReviewWithHuggingFace(reviewData.content);
     } catch (hfError) {
-      console.log('HuggingFace API unavailable, using local analysis only');
-      // Fallback to local analysis
+      console.log('HuggingFace API unavailable, using enhanced local analysis');
+      // Enhanced fallback analysis with better gibberish detection
+      const words = reviewData.content.split(/\s+/);
+      const uniqueWords = new Set(words.map(w => w.toLowerCase()));
+      const repetitionRatio = uniqueWords.size / words.length;
+      const isMostlyNonAlpha = (reviewData.content.replace(/[^a-zA-Z]/g, '').length / reviewData.content.length) < 0.5;
+
+      // Enhanced gibberish detection
+      const isGibberish = detectGibberishFallback(reviewData.content);
+      
       aiAnalysis = {
-        authenticityScore: authenticityResult?.authenticityScore || 75,
-        isAIGenerated: false,
+        authenticityScore: isGibberish.isGibberish ? 25 : 75,
+        isAIGenerated: isGibberish.isGibberish,
         huggingFaceResults: null,
-        localAnalysis: { sentiment: { score: 0 } },
-        detailedAnalysis: { textLength: reviewData.content.length, complexity: 'medium' }
+        localAnalysis: { 
+          sentiment: { score: isGibberish.isGibberish ? -1 : 0.5 },
+          linguistic: {
+            complexityMetrics: {
+              lexicalDiversity: isGibberish.isGibberish ? 0.1 : 0.6,
+              morphologicalComplexity: isGibberish.isGibberish ? 0.1 : 0.5,
+              readabilityScore: isGibberish.isGibberish ? 10 : 70
+            },
+            semanticFeatures: {
+              namedEntities: isGibberish.isGibberish ? [] : ['product', 'quality']
+            }
+          }
+        },
+        detailedAnalysis: { 
+          textLength: reviewData.content.length, 
+          complexity: isGibberish.isGibberish ? 'low' : 'medium',
+          gibberishReason: isGibberish.reason
+        }
       };
     }
     
@@ -81,7 +194,7 @@ router.post('/', async (req, res) => {
       emotionalAuthenticity: Math.min(100, Math.abs(aiAnalysis.localAnalysis.sentiment.score) * 20 + 50),
       specificDetails: Math.min(100, aiAnalysis.localAnalysis.linguistic.semanticFeatures.namedEntities.length * 10 + 40),
       vocabularyComplexity: Math.round(aiAnalysis.localAnalysis.linguistic.complexityMetrics.morphologicalComplexity * 100),
-      grammarScore: Math.min(100, aiAnalysis.localAnalysis.linguistic.complexityMetrics.readabilityScore)
+      grammarScore: Math.max(0, Math.min(100, aiAnalysis.localAnalysis.linguistic.complexityMetrics.readabilityScore))
     };
     
     // Store HuggingFace results for advanced analysis

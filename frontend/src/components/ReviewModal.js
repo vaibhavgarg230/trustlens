@@ -94,10 +94,11 @@ export default function ReviewModal({ order, onClose, onReviewSubmitted }) {
       }
       
       // Update order to mark review as submitted
-      await apiService.updateOrderStatus(order._id, {
-        reviewSubmitted: true,
-        customerRating: rating
-      });
+      // Remove this block to avoid sending invalid status
+      // await apiService.updateOrderStatus(order._id, {
+      //   reviewSubmitted: true,
+      //   customerRating: rating
+      // });
 
       // Show analysis results
       setAnalysisData(response.data);

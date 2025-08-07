@@ -62,10 +62,15 @@ export const createVendorProduct = (vendorId, productData) => {
   // Append all product data
   Object.keys(productData).forEach(key => {
     if (key === 'images' && Array.isArray(productData[key])) {
-      // Handle file uploads
-      productData[key].forEach(file => {
-        formData.append('images', file);
-      });
+      // If all are strings (URLs), send as JSON
+      if (productData[key].every(img => typeof img === 'string')) {
+        formData.append('images', JSON.stringify(productData[key]));
+      } else {
+        // Handle file uploads (not used in current UI)
+        productData[key].forEach(file => {
+          formData.append('images', file);
+        });
+      }
     } else if (key === 'inventory' && typeof productData[key] === 'object') {
       // Stringify inventory data
       formData.append(key, JSON.stringify(productData[key]));
@@ -82,8 +87,31 @@ export const createVendorProduct = (vendorId, productData) => {
 };
 
 // Update product for vendor
-export const updateVendorProduct = (vendorId, productId, productData) =>
-  api.put(`/vendor/vendors/${vendorId}/products/${productId}`, productData);
+export const updateVendorProduct = (vendorId, productId, productData) => {
+  const formData = new FormData();
+
+  Object.keys(productData).forEach(key => {
+    if (key === 'images' && Array.isArray(productData[key])) {
+      if (productData[key].every(img => typeof img === 'string')) {
+        formData.append('images', JSON.stringify(productData[key]));
+      } else {
+        productData[key].forEach(file => {
+          formData.append('images', file);
+        });
+      }
+    } else if (key === 'inventory' && typeof productData[key] === 'object') {
+      formData.append(key, JSON.stringify(productData[key]));
+    } else {
+      formData.append(key, productData[key]);
+    }
+  });
+
+  return api.put(`/vendor/vendors/${vendorId}/products/${productId}`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+};
 
 // Delete product for vendor
 export const deleteVendorProduct = (vendorId, productId) =>
@@ -231,6 +259,9 @@ export const apiService = {
   getVendorOrderStats: (vendorId) => getVendorOrderStats(vendorId),
   getVendorOrderDetails: (vendorId, orderId) => getVendorOrder(vendorId, orderId),
   updateVendorOrderStatus: (vendorId, orderId, statusData) => updateVendorOrderStatus(vendorId, orderId, statusData),
+
+  // Linguistic Analysis API
+  getUserLinguisticAnalysis: (userId) => api.get(`/users/${userId}/linguistic-analysis`),
 };
 
 export default apiService;

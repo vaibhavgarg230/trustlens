@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const Review = require('../models/Review');
 const { Alert } = require('./alertSystem');
+const axios = require('axios');
 
 class PredictionAI {
   
@@ -9,19 +10,36 @@ class PredictionAI {
     try {
       const user = await User.findById(userId);
       if (!user) throw new Error('User not found');
-      
-      const analysis = await this.analyzeTrustFactors(user);
-      const prediction = this.calculateTrustPrediction(analysis, timeframeDays, targetScore);
-      
-      return {
-        prediction: prediction.outcome,
-        confidence: prediction.confidence,
-        reasoning: prediction.reasoning,
-        modelVersion: 'TrustPredict-v1.0',
-        factors: analysis
-      };
+      // --- Hugging Face DistilBERT Integration ---
+      const summary = `User trustScore: ${user.trustScore}, accountAge: ${user.accountAge}, transactionCount: ${user.transactionCount}, riskLevel: ${user.riskLevel}`;
+      try {
+        const hfResponse = await axios.post(
+          'https://api-inference.huggingface.co/models/distilbert-base-uncased-finetuned-sst-2-english',
+          { inputs: summary },
+          { headers: { Authorization: `Bearer HUGGINGFACE_API_KEY` } }
+        );
+        const label = hfResponse.data[0]?.label || 'NEGATIVE';
+        const score = hfResponse.data[0]?.score || 0.5;
+        return {
+          prediction: label === 'POSITIVE' ? 'yes' : 'no',
+          confidence: Math.round(score * 100),
+          reasoning: [`Hugging Face DistilBERT: ${label} (${Math.round(score * 100)}%)`],
+          modelVersion: 'DistilBERT-sst2',
+          factors: { summary }
+        };
+      } catch (hfError) {
+        // Fallback to rule-based if Hugging Face fails
+        const analysis = await this.analyzeTrustFactors(user);
+        const prediction = this.calculateTrustPrediction(analysis, timeframeDays, targetScore);
+        return {
+          prediction: prediction.outcome, // ensure 'prediction' is always set
+          confidence: prediction.confidence,
+          reasoning: prediction.reasoning,
+          modelVersion: 'TrustPredict-v1.0 (fallback)'
+        };
+      }
     } catch (error) {
-      console.error('Trust prediction error:', error);
+      // Fallback to rule-based if user not found
       return {
         prediction: 'no',
         confidence: 50,
@@ -129,39 +147,52 @@ class PredictionAI {
   static async predictFraudLikelihood(userId, timeframeDays) {
     try {
       const user = await User.findById(userId);
-      const factors = await this.analyzeTrustFactors(user);
-      
-      let fraudScore = 0;
-      const reasoning = [];
-      
-      // Risk factors
-      if (factors.currentTrustScore < 30) {
-        fraudScore += 30;
-        reasoning.push('Very low trust score');
+      // --- Hugging Face DistilBERT Integration ---
+      const summary = `User trustScore: ${user.trustScore}, accountAge: ${user.accountAge}, transactionCount: ${user.transactionCount}, riskLevel: ${user.riskLevel}`;
+      try {
+        const hfResponse = await axios.post(
+          'https://api-inference.huggingface.co/models/distilbert-base-uncased-finetuned-sst-2-english',
+          { inputs: summary },
+          { headers: { Authorization: `Bearer HUGGINGFACE_API_KEY` } }
+        );
+        const label = hfResponse.data[0]?.label || 'NEGATIVE';
+        const score = hfResponse.data[0]?.score || 0.5;
+        return {
+          prediction: label === 'NEGATIVE' ? 'yes' : 'no',
+          confidence: Math.round(score * 100),
+          reasoning: [`Hugging Face DistilBERT: ${label} (${Math.round(score * 100)}%)`],
+          fraudScore: Math.round(score * 100),
+          modelVersion: 'DistilBERT-sst2',
+        };
+      } catch (hfError) {
+        // Fallback to rule-based if Hugging Face fails
+        const factors = await this.analyzeTrustFactors(user);
+        let fraudScore = 0;
+        const reasoning = [];
+        if (factors.currentTrustScore < 30) {
+          fraudScore += 30;
+          reasoning.push('Very low trust score');
+        }
+        if (factors.alertHistory > 2) {
+          fraudScore += 25;
+          reasoning.push('Multiple security alerts');
+        }
+        if (factors.behavioralConsistency < 20) {
+          fraudScore += 20;
+          reasoning.push('Suspicious behavioral patterns');
+        }
+        if (factors.accountAge < 7) {
+          fraudScore += 15;
+          reasoning.push('Very new account');
+        }
+        return {
+          prediction: fraudScore > 50 ? 'yes' : 'no',
+          confidence: Math.min(90, fraudScore + 10),
+          reasoning,
+          fraudScore,
+          modelVersion: 'FraudPredict-v1.0 (fallback)'
+        };
       }
-      
-      if (factors.alertHistory > 2) {
-        fraudScore += 25;
-        reasoning.push('Multiple security alerts');
-      }
-      
-      if (factors.behavioralConsistency < 20) {
-        fraudScore += 20;
-        reasoning.push('Suspicious behavioral patterns');
-      }
-      
-      if (factors.accountAge < 7) {
-        fraudScore += 15;
-        reasoning.push('Very new account');
-      }
-      
-      return {
-        prediction: fraudScore > 50 ? 'yes' : 'no',
-        confidence: Math.min(90, fraudScore + 10),
-        reasoning,
-        fraudScore,
-        modelVersion: 'FraudPredict-v1.0'
-      };
     } catch (error) {
       return {
         prediction: 'no',

@@ -18,7 +18,7 @@ const Navigation = () => {
           <div className="flex items-center">
             <div className="flex-shrink-0 cursor-pointer" onClick={() => navigate('/')}>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">TRUSTLENS</h1>
-              <p className="text-sm text-gray-600 dark:text-gray-300">AI-Powered Trust System v1.0.0</p>
+              <p className="text-sm text-gray-600 dark:text-gray-300">AI-Powered Trust System</p>
             </div>
           </div>
           <div className="flex items-center space-x-4">

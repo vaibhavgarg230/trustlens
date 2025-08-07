@@ -113,7 +113,7 @@ export default function VendorDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-blue-50 p-4 rounded-lg">
               <h3 className="font-medium text-blue-900">Trust Score</h3>
-              <p className="text-2xl font-bold text-blue-600">{vendor?.trustScore || 50}/100</p>
+              <p className="text-2xl font-bold text-blue-600">{vendor?.trustScore !== undefined ? Number(vendor.trustScore).toFixed(2) : '50.00'}/100</p>
             </div>
             <div className="bg-green-50 p-4 rounded-lg">
               <h3 className="font-medium text-green-900">Total Sales</h3>

@@ -208,7 +208,7 @@ export default function MyOrders() {
                     <div>
                       <p className="text-sm text-gray-600">Vendor</p>
                       <p className="font-medium">{order.vendorName}</p>
-                      <p className="text-sm text-blue-600">Trust Score: {order.vendorTrustScore}</p>
+                      <p className="text-sm text-blue-600">Trust Score: {order.vendorTrustScore !== undefined ? Number(order.vendorTrustScore).toFixed(2) : ''}</p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">Payment</p>
@@ -231,7 +231,7 @@ export default function MyOrders() {
                     <div className="flex items-center space-x-2">
                       <span className="text-blue-600">🛡️</span>
                       <span className="text-sm text-blue-700">
-                        Order Trust Score: <span className="font-bold">{order.orderTrustScore}/100</span>
+                        Order Trust Score: <span className="font-bold">{order.orderTrustScore !== undefined ? Number(order.orderTrustScore).toFixed(2) : ''}/100</span>
                       </span>
                     </div>
                     <div className="text-sm text-blue-600">
@@ -389,7 +389,7 @@ function OrderDetailsModal({ order, onClose }) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="text-center p-3 bg-blue-50 rounded-lg">
               <p className="text-sm text-gray-600">Order Trust Score</p>
-              <p className="text-2xl font-bold text-blue-600">{order.orderTrustScore}</p>
+              <p className="text-2xl font-bold text-blue-600">{order.orderTrustScore !== undefined ? Number(order.orderTrustScore).toFixed(2) : ''}</p>
             </div>
             <div className="text-center p-3 bg-yellow-50 rounded-lg">
               <p className="text-sm text-gray-600">Fraud Risk</p>
@@ -397,7 +397,7 @@ function OrderDetailsModal({ order, onClose }) {
             </div>
             <div className="text-center p-3 bg-green-50 rounded-lg">
               <p className="text-sm text-gray-600">Vendor Trust</p>
-              <p className="text-2xl font-bold text-green-600">{order.vendorTrustScore}</p>
+              <p className="text-2xl font-bold text-green-600">{order.vendorTrustScore !== undefined ? Number(order.vendorTrustScore).toFixed(2) : ''}</p>
             </div>
           </div>
         </div>

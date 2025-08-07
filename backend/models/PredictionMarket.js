@@ -158,17 +158,24 @@ predictionMarketSchema.methods.updateOdds = function() {
 predictionMarketSchema.methods.resolveMarket = function(actualValue, resolvedBy = 'system') {
   if (this.marketStatus !== 'active') return false;
   
+  // Convert actualValue to number to handle string inputs
+  const numericValue = Number(actualValue);
+  
   let outcome;
   if (this.marketType === 'trust_score_prediction') {
-    outcome = actualValue >= this.predictionTarget.value ? 'yes' : 'no';
+    outcome = numericValue >= this.predictionTarget.value ? 'yes' : 'no';
+  } else if (this.marketType === 'fraud_likelihood') {
+    // For fraud likelihood: 1 = fraud detected (YES), 0 = no fraud (NO)
+    outcome = numericValue === 1 ? 'yes' : 'no';
+    console.log(`🔍 Fraud resolution: actualValue=${actualValue}, numericValue=${numericValue}, outcome=${outcome}`);
   } else {
-    // Add logic for other market types
-    outcome = actualValue ? 'yes' : 'no';
+    // Default logic for other market types
+    outcome = numericValue ? 'yes' : 'no';
   }
   
   this.resolution = {
     outcome,
-    actualValue,
+    actualValue: numericValue,
     resolvedAt: new Date(),
     resolvedBy
   };

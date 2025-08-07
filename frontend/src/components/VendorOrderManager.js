@@ -162,9 +162,6 @@ export default function VendorOrderManager() {
                     Customer
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Items
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Total
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -231,9 +228,6 @@ function OrderRow({ order, onStatusUpdate }) {
           <div className="font-medium">{order.customer?.name || 'Unknown Customer'}</div>
           <div className="text-gray-500">{order.customer?.email || ''}</div>
         </div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-        {order.items?.length || 0} item(s)
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
         ₹{order.totalAmount || 0}

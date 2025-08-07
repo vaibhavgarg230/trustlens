@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Line, Doughnut } from 'react-chartjs-2';
+import { Doughnut } from 'react-chartjs-2';
 
 const AlertSystem = () => {
   const [alerts, setAlerts] = useState([]);
@@ -181,31 +181,7 @@ const AlertSystem = () => {
     return icons[severity] || '';
   };
 
-  const getAlertTrendData = () => {
-    // Group alerts by date for trend analysis
-    const last7Days = Array.from({ length: 7 }, (_, i) => {
-      const date = new Date();
-      date.setDate(date.getDate() - (6 - i));
-      return date.toDateString();
-    });
 
-    const trendData = last7Days.map(date => {
-      return alerts.filter(alert => 
-        new Date(alert.createdAt).toDateString() === date
-      ).length;
-    });
-
-    return {
-      labels: last7Days.map(date => new Date(date).toLocaleDateString()),
-      datasets: [{
-        label: 'Daily Alerts',
-        data: trendData,
-        borderColor: '#ef4444',
-        backgroundColor: 'rgba(239, 68, 68, 0.1)',
-        tension: 0.4
-      }]
-    };
-  };
 
   const getSeverityDistributionData = () => {
     return {
@@ -300,34 +276,7 @@ const AlertSystem = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-          {/* Alert Trend Chart */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
-            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Alert Trend (7 Days)</h3>
-            <Line data={getAlertTrendData()} options={{ 
-              responsive: true,
-              plugins: {
-                legend: {
-                  labels: {
-                    color: document.documentElement.classList.contains('dark') ? '#ffffff' : '#000000'
-                  }
-                }
-              },
-              scales: {
-                x: {
-                  ticks: {
-                    color: document.documentElement.classList.contains('dark') ? '#9ca3af' : '#6b7280'
-                  }
-                },
-                y: {
-                  ticks: {
-                    color: document.documentElement.classList.contains('dark') ? '#9ca3af' : '#6b7280'
-                  }
-                }
-              }
-            }} />
-          </div>
-
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           {/* Severity Distribution */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
             <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Severity Distribution</h3>
@@ -344,42 +293,40 @@ const AlertSystem = () => {
           </div>
 
           {/* Quick Actions */}
-<div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
-  <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Quick Actions</h3>
-  <div className="space-y-3">
-    <button
-      onClick={() => {
-        setFilter('Active');
-        setSeverityFilter('all');
-      }}
-      className="w-full text-left p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors duration-200"
-    >
-      <div className="font-medium text-red-800 dark:text-red-200">View Active Alerts</div>
-      <div className="text-sm text-red-600 dark:text-red-300">{stats.active} alerts need attention</div>
-    </button>
-    <button
-      onClick={() => {
-        setSeverityFilter('Critical');
-        setFilter('all');
-      }}
-      className="w-full text-left p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors duration-200"
-    >
-      <div className="font-medium text-purple-800 dark:text-purple-200">Critical Alerts</div>
-      <div className="text-sm text-purple-600 dark:text-purple-300">{stats.critical} critical issues</div>
-    </button>
-    <button
-      onClick={() => {
-
-        fetchAlerts();
-      }}
-      className="w-full text-left p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors duration-200"
-    >
-      <div className="font-medium text-blue-800 dark:text-blue-200">Refresh Alerts</div>
-      <div className="text-sm text-blue-600 dark:text-blue-300">Update alert list</div>
-    </button>
-  </div>
-</div>
-
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
+            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Quick Actions</h3>
+            <div className="space-y-3">
+              <button
+                onClick={() => {
+                  setFilter('Active');
+                  setSeverityFilter('all');
+                }}
+                className="w-full text-left p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors duration-200"
+              >
+                <div className="font-medium text-red-800 dark:text-red-200">View Active Alerts</div>
+                <div className="text-sm text-red-600 dark:text-red-300">{stats.active} alerts need attention</div>
+              </button>
+              <button
+                onClick={() => {
+                  setSeverityFilter('Critical');
+                  setFilter('all');
+                }}
+                className="w-full text-left p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors duration-200"
+              >
+                <div className="font-medium text-purple-800 dark:text-purple-200">Critical Alerts</div>
+                <div className="text-sm text-purple-600 dark:text-purple-300">{stats.critical} critical issues</div>
+              </button>
+              <button
+                onClick={() => {
+                  fetchAlerts();
+                }}
+                className="w-full text-left p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors duration-200"
+              >
+                <div className="font-medium text-blue-800 dark:text-blue-200">Refresh Alerts</div>
+                <div className="text-sm text-blue-600 dark:text-blue-300">Update alert list</div>
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Alert List */}

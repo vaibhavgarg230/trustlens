@@ -125,7 +125,7 @@ const MarketplaceSimulator = () => {
     if (name.includes('keyboard') || name.includes('techno')) return '⌨️';
     if (name.includes('graphics') || name.includes('card') || name.includes('gpu')) return '🖥️';
     if (name.includes('smartwatch') || name.includes('pulse')) return '⌚';
-    return '📦'; // Default
+    return '📦'; 
   };
 
   const injectRealFraud = async () => {
@@ -158,7 +158,7 @@ const MarketplaceSimulator = () => {
       // Add error activity
       setLiveActivity(prev => [{
       id: Date.now(),
-        message: '❌ Fraud injection failed - Check backend connection',
+        message: 'Fraud injection failed - Check backend connection',
       timestamp: new Date().toLocaleTimeString(),
         type: 'error'
       }, ...prev.slice(0, 14)]);
@@ -168,15 +168,15 @@ const MarketplaceSimulator = () => {
   // Real trust badge based on actual vendor trust scores
   const getTrustBadge = (vendor) => {
     if (!vendor || !vendor.name) {
-      return { text: ' Missing Vendor', color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200', icon: '' };
+      return { text: ' Missing Vendor', color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200', icon: '⚠️' };
     }
     
     const score = vendor.trustScore || 0;
     
-    if (score >= 80) return { text: 'Elite Seller', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200', icon: '' };
-    if (score >= 60) return { text: 'Trusted', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200', icon: '' };
-    if (score >= 40) return { text: 'Verified', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200', icon: '' };
-    return { text: ' Low Trust', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200', icon: '' };
+    if (score >= 80) return { text: 'Elite Seller', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200', icon: '👑' };
+    if (score >= 60) return { text: 'Trusted', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200', icon: '✅' };
+    if (score >= 40) return { text: 'Verified', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200', icon: '🔷' };
+    return { text: ' Low Trust', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200', icon: '⚠️' };
   };
 
   // Real authenticity score colors based on actual scores
@@ -226,7 +226,7 @@ const MarketplaceSimulator = () => {
     <div className="max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">TrustLens Marketplace</h2>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white"> TrustLens Marketplace</h2>
           <p className="text-gray-600 dark:text-gray-300 mt-2">Real-time fraud detection powered by MongoDB Atlas data</p>
       </div>
 
@@ -238,7 +238,7 @@ const MarketplaceSimulator = () => {
                 onClick={fetchAllRealData}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors duration-200 flex items-center space-x-2"
               >
-                <span>🔄</span>
+                <span></span>
                 <span>Refresh Real Data</span>
               </button>
               <div className="text-sm text-gray-500 dark:text-gray-400">
@@ -249,7 +249,7 @@ const MarketplaceSimulator = () => {
               onClick={injectRealFraud}
               className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md font-medium transition-colors duration-200 flex items-center space-x-2"
             >
-              <span>⚡</span>
+              <span></span>
               <span>Inject Real Fraud</span>
             </button>
           </div>
@@ -296,7 +296,7 @@ const MarketplaceSimulator = () => {
               </div>
               <div className="ml-3">
                 <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Fraud Detection Rate</h3>
-                <p className={`text-2xl font-bold ${getFraudRateColor(realtimeStats.fraudDetectionRate)}`}>
+                <p className={`text-2xl font-bold {getFraudRateColor(realtimeStats.fraudDetectionRate)}`}>
                   {realtimeStats.fraudDetectionRate}%
                 </p>
                 <p className="text-xs text-gray-400 dark:text-gray-500">
@@ -335,7 +335,7 @@ const MarketplaceSimulator = () => {
           <div className="p-6">
               {products.length === 0 ? (
                 <div className="text-center py-8">
-                  <div className="text-gray-400 text-4xl mb-4">📦</div>
+                  <div className="text-gray-400 text-4xl mb-4"></div>
                   <p className="text-gray-500 dark:text-gray-400 font-medium">No products available</p>
                   <p className="text-gray-400 dark:text-gray-500 text-sm mt-2">Please check your database connection</p>
                   <button 
@@ -449,7 +449,7 @@ const MarketplaceSimulator = () => {
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
                 <span className="mr-2"></span>
                 Real Activity Feed
-                <span className="ml-2 text-xs text-green-600 dark:text-green-400">● LIVE</span>
+                <span className="ml-2 text-xs text-green-600 dark:text-green-400"> LIVE</span>
               </h3>
           </div>
           <div className="p-6">
@@ -491,7 +491,7 @@ const MarketplaceSimulator = () => {
                   onClick={fetchRealtimeActivity}
                   className="w-full text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 font-medium"
                 >
-                  🔄 Refresh Activity Feed
+                   Refresh Activity Feed
                 </button>
             </div>
           </div>

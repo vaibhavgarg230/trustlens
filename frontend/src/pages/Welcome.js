@@ -21,7 +21,7 @@ export default function Welcome() {
                 TRUSTLENS
               </h1>
               <p className="text-xl text-blue-600 dark:text-blue-400 font-medium">
-                AI-Powered Trust System v1.0.0
+                AI-Powered Trust System 
               </p>
             </div>
           </div>
@@ -50,12 +50,6 @@ export default function Welcome() {
                 Complete system oversight with advanced analytics, fraud detection, 
                 and platform management capabilities.
               </p>
-              <ul className="text-sm text-gray-500 dark:text-gray-400 mb-6 space-y-2">
-                <li>• System-wide trust monitoring</li>
-                <li>• AI fraud detection alerts</li>
-                <li>• Vendor & user management</li>
-                <li>• Real-time analytics dashboard</li>
-              </ul>
               <button
                 onClick={() => navigate('/admin/login')}
                 className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200"
@@ -76,12 +70,6 @@ export default function Welcome() {
                 Shop with confidence using AI-verified products and 
                 community-validated reviews for trusted purchases.
               </p>
-              <ul className="text-sm text-gray-500 dark:text-gray-400 mb-6 space-y-2">
-                <li>• Browse verified products</li>
-                <li>• AI-authenticated reviews</li>
-                <li>• Secure order tracking</li>
-                <li>• Trust-based recommendations</li>
-              </ul>
               <div className="space-y-3">
                 <button
                   onClick={() => navigate('/customer/login')}
@@ -110,12 +98,6 @@ export default function Welcome() {
                 Manage your store with AI-powered insights, fraud alerts, 
                 and comprehensive analytics for business growth.
               </p>
-              <ul className="text-sm text-gray-500 dark:text-gray-400 mb-6 space-y-2">
-                <li>• Product & inventory management</li>
-                <li>• Sales analytics & insights</li>
-                <li>• Fraud detection alerts</li>
-                <li>• Customer behavior analysis</li>
-              </ul>
               <div className="space-y-3">
                 <button
                   onClick={() => navigate('/vendor/login')}
@@ -135,6 +117,7 @@ export default function Welcome() {
         </div>
 
         {/* Footer */}
+<<<<<<< HEAD
         <div className="text-center mt-16">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 max-w-4xl mx-auto">
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
@@ -160,6 +143,9 @@ export default function Welcome() {
             </div>
           </div>
         </div>
+=======
+        {/* Removed advanced AI features section */}
+>>>>>>> f1af70b787dab9e7f1d17e31876d5415841d5a05
       </div>
     </div>
   );

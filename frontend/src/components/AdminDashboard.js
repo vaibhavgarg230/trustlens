@@ -108,17 +108,12 @@ const AdminDashboard = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center">
-              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 mr-2">🛡️</div>
               <div>
                 <h1 className="text-xl font-semibold text-gray-900 dark:text-white">TRUSTLENS Admin</h1>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Secure Administration Panel</p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
               <ThemeToggle />
-              <div className="text-sm text-gray-600 dark:text-gray-300">
-                Welcome, Admin
-              </div>
               <button
                 onClick={handleLogout}
                 className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
@@ -144,7 +139,6 @@ const AdminDashboard = () => {
                     : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
                 }`}
               >
-                <span className="mr-2">{tab.icon}</span>
                 {tab.name}
               </button>
             ))}

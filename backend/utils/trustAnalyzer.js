@@ -7,12 +7,19 @@ class TrustAnalyzer {
   static async calculateTrustScore(user) {
     let score = 50; // Base score
     
+    // Calculate real-time account age
+    const accountAge = Math.floor((new Date() - new Date(user.createdAt)) / (1000 * 60 * 60 * 24));
+    
     // Account age factor (older accounts are more trusted)
-    const ageBonus = Math.min(user.accountAge * 2, 20);
+    const ageBonus = Math.min(accountAge * 2, 20);
     score += ageBonus;
     
+    // Get real transaction count from orders
+    const Order = require('../models/Order');
+    const transactionCount = await Order.countDocuments({ customer: user._id });
+    
     // Transaction history factor
-    const transactionBonus = Math.min(user.transactionCount * 0.5, 15);
+    const transactionBonus = Math.min(transactionCount * 0.5, 15);
     score += transactionBonus;
     
     // Behavioral consistency check
@@ -25,21 +32,43 @@ class TrustAnalyzer {
     const ipImpact = await this.calculateIPUniquenessScore(user);
     score += ipImpact.scoreAdjustment;
     
-    // Risk level adjustment
-    switch (user.riskLevel) {
-      case 'Low':
-        score += 10;
-        break;
-      case 'High':
-        score -= 15;
-        break;
+    // Recent activity factor (positive for moderate activity, negative for excessive)
+    if (transactionCount > 0 && accountAge > 0) {
+      const activityRate = transactionCount / accountAge;
+      if (activityRate > 0.5 && activityRate < 2) {
+        score += 5; // Healthy activity rate
+      } else if (activityRate > 5) {
+        score -= 10; // Excessive activity (suspicious)
+      }
     }
     
-    const finalScore = Math.max(0, Math.min(100, score));
+    // Account age milestones
+    if (accountAge > 365) {
+      score += 10; // 1+ year account
+    } else if (accountAge > 90) {
+      score += 5; // 3+ months account
+    } else if (accountAge < 7) {
+      score -= 5; // Very new account
+    }
+    
+    // Transaction milestones
+    if (transactionCount > 20) {
+      score += 5; // High transaction volume
+    } else if (transactionCount > 5) {
+      score += 3; // Moderate transaction volume
+    } else if (transactionCount === 0) {
+      score -= 5; // No transactions
+    }
+    
+    const finalScore = Math.max(0, Math.min(100, Math.round(score)));
     
     // Update user's trust score in database
     if (user.trustScore !== finalScore) {
-      await User.findByIdAndUpdate(user._id, { trustScore: finalScore });
+      await User.findByIdAndUpdate(user._id, { 
+        trustScore: finalScore,
+        accountAge: accountAge,
+        transactionCount: transactionCount
+      });
     }
     
     return finalScore;
@@ -235,66 +264,41 @@ class TrustAnalyzer {
       // Calculate aggregate return rate across all products
       let totalSold = 0;
       let totalReturned = 0;
-      let returnRatePenalties = 0;
-      
       products.forEach(product => {
         totalSold += product.totalSold;
         totalReturned += product.totalReturned;
-        
-        // Apply return rate penalties per product
-        const returnRate = product.returnRate || 0;
-        if (returnRate > 50) {
-          returnRatePenalties -= 15; // High return rate penalty
-        } else if (returnRate > 20) {
-          returnRatePenalties -= 7;  // Medium return rate penalty
-        } else if (returnRate < 20 && product.totalSold > 0) {
-          returnRatePenalties += 5;  // Low return rate bonus
-        }
       });
-      
       const overallReturnRate = totalSold > 0 ? (totalReturned / totalSold) * 100 : 0;
-      
+
+      // Proportional trust score formula
+      let trustScore = 80 - (overallReturnRate * 0.5);
+      trustScore = Math.max(0, Math.min(100, trustScore));
+
       // Try to find seller as User first, then as Vendor
       let seller = await User.findById(sellerId);
       let isVendor = false;
-      
       if (!seller) {
         seller = await Vendor.findById(sellerId);
         isVendor = true;
       }
-      
       if (!seller) {
         console.log(`❌ Seller not found: ${sellerId}`);
         return null;
       }
-      
-      // Calculate base trust score (start with current or default)
-      let baseTrustScore = seller.trustScore || 50;
-      
-      // For Users, recalculate using existing method
-      if (!isVendor && seller.behaviorData) {
-        baseTrustScore = await this.calculateTrustScore(seller);
-      }
-      
-      // Apply return rate adjustments
-      const adjustedTrustScore = Math.max(0, Math.min(100, baseTrustScore + returnRatePenalties));
-      
+
       // Update seller's trust score and return rate data
-      const updateData = { 
-        trustScore: adjustedTrustScore,
+      const updateData = {
+        trustScore: trustScore,
         totalSales: totalSold,
         totalReturns: totalReturned,
         overallReturnRate: overallReturnRate
       };
-      
       if (isVendor) {
         await Vendor.findByIdAndUpdate(sellerId, updateData);
       } else {
         await User.findByIdAndUpdate(sellerId, updateData);
       }
-      
-      console.log(`🎯 ${isVendor ? 'Vendor' : 'User'} trust updated: ${seller.name || seller.username} - Return Rate: ${overallReturnRate.toFixed(2)}%, Trust: ${baseTrustScore} → ${adjustedTrustScore}`);
-      
+      console.log(`🎯 ${isVendor ? 'Vendor' : 'User'} trust updated: ${seller.name || seller.username} - Return Rate: ${overallReturnRate.toFixed(2)}%, Trust: ${trustScore}`);
       return {
         sellerId,
         sellerName: seller.name || seller.username,
@@ -303,10 +307,9 @@ class TrustAnalyzer {
         totalSold,
         totalReturned,
         overallReturnRate: parseFloat(overallReturnRate.toFixed(2)),
-        returnRatePenalties,
-        oldTrustScore: baseTrustScore,
-        newTrustScore: adjustedTrustScore,
-        trustScoreChange: adjustedTrustScore - baseTrustScore
+        oldTrustScore: seller.trustScore,
+        newTrustScore: trustScore,
+        trustScoreChange: trustScore - (seller.trustScore || 0)
       };
       
     } catch (error) {

@@ -95,14 +95,168 @@ router.post('/workflow/:authId/progress', async (req, res) => {
 // Get all reviews requiring manual review
 router.get('/pending-review', async (req, res) => {
   try {
-    const pendingReviews = await ReviewAuthentication.find({
-      'verificationWorkflow.currentStage': { $in: ['community_review', 'expert_validation'] },
-      'finalDecision.status': { $in: ['suspicious', 'requires_investigation'] }
-    }).populate('reviewId');
+    const { showAll = false } = req.query;
+    
+    let query = {};
+    
+    if (showAll === 'true') {
+      // Show all reviews for debugging
+      query = {};
+      console.log('🔍 Debug mode: Showing all reviews');
+    } else {
+      // More inclusive query to catch all reviews that need community validation
+      query = {
+        $or: [
+          // Reviews in community review stage
+          { 'verificationWorkflow.currentStage': 'community_review' },
+          // Reviews marked as suspicious or requiring investigation
+          { 'finalDecision.status': { $in: ['suspicious', 'requires_investigation'] } },
+          // Reviews with low authentication scores that might need human review
+          { 
+            'overallAuthenticationScore': { $lt: 70 },
+            'finalDecision.status': { $ne: 'authentic' }
+          }
+        ]
+      };
+    }
+    
+    const pendingReviews = await ReviewAuthentication.find(query).populate('reviewId');
+    
+    console.log(`📋 Found ${pendingReviews.length} reviews pending community validation`);
+    
+    // Log some details for debugging
+    pendingReviews.forEach((review, index) => {
+      console.log(`Review ${index + 1}: ${review.reviewId?.reviewerName || 'Unknown'} - Score: ${review.overallAuthenticationScore}% - Status: ${review.finalDecision?.status} - Stage: ${review.verificationWorkflow?.currentStage}`);
+    });
     
     res.json(pendingReviews);
   } catch (error) {
+    console.error('Error fetching pending reviews:', error);
     res.status(500).json({ message: error.message });
+  }
+});
+
+// Submit community vote for a review
+router.post('/:reviewId/community-vote', async (req, res) => {
+  try {
+    const { voterId, vote, confidence, reasoning } = req.body;
+    
+    // Find the authentication record for this review
+    const authRecord = await ReviewAuthentication.findOne({ 
+      reviewId: req.params.reviewId 
+    });
+    
+    if (!authRecord) {
+      return res.status(404).json({ message: 'Review authentication record not found' });
+    }
+    
+    // Add community validation step if it doesn't exist
+    let communityStep = authRecord.authenticationSteps.find(
+      step => step.step === 'community_validation'
+    );
+    
+    if (!communityStep) {
+      communityStep = {
+        step: 'community_validation',
+        status: 'pending',
+        score: 0,
+        details: {
+          votes: [],
+          totalVotes: 0,
+          consensus: null
+        },
+        timestamp: new Date(),
+        processedBy: 'community'
+      };
+      authRecord.authenticationSteps.push(communityStep);
+    }
+    
+    // Add the vote
+    if (!communityStep.details.votes) {
+      communityStep.details.votes = [];
+    }
+    
+    // Check if user already voted
+    const existingVote = communityStep.details.votes.find(v => v.voterId === voterId);
+    if (existingVote) {
+      return res.status(400).json({ message: 'You have already voted on this review' });
+    }
+    
+    communityStep.details.votes.push({
+      voterId,
+      vote,
+      confidence,
+      reasoning,
+      timestamp: new Date()
+    });
+    
+    communityStep.details.totalVotes = communityStep.details.votes.length;
+    
+    // Calculate consensus
+    const voteCounts = {};
+    let totalConfidence = 0;
+    
+    communityStep.details.votes.forEach(v => {
+      voteCounts[v.vote] = (voteCounts[v.vote] || 0) + 1;
+      totalConfidence += v.confidence;
+    });
+    
+    const majorityVote = Object.keys(voteCounts).reduce((a, b) => 
+      voteCounts[a] > voteCounts[b] ? a : b
+    );
+    
+    const consensusConfidence = Math.round(totalConfidence / communityStep.details.votes.length);
+    
+    communityStep.details.consensus = {
+      majorityVote,
+      confidence: consensusConfidence,
+      totalVotes: communityStep.details.votes.length
+    };
+    
+    // Update step status based on consensus
+    if (communityStep.details.votes.length >= 3) { // Minimum 3 votes for consensus
+      communityStep.status = 'passed';
+      communityStep.score = consensusConfidence;
+      
+      // Update final decision if consensus is strong
+      if (consensusConfidence >= 70) {
+        authRecord.finalDecision.status = majorityVote;
+        authRecord.finalDecision.confidence = consensusConfidence;
+        authRecord.finalDecision.reasoning = [`Community consensus: ${majorityVote} (${consensusConfidence}% confidence)`];
+        authRecord.finalDecision.decidedBy = 'community';
+        authRecord.finalDecision.decidedAt = new Date();
+        
+        // Move to next stage
+        authRecord.verificationWorkflow.currentStage = 'expert_validation';
+      }
+    }
+    
+    await authRecord.save();
+    
+    // Broadcast real-time update
+    if (socketHandler) {
+      socketHandler.broadcastReviewStatusUpdate(
+        authRecord.reviewId,
+        authRecord.finalDecision.status,
+        'community'
+      );
+    }
+    
+    res.json({
+      success: true,
+      vote: {
+        voterId,
+        vote,
+        confidence,
+        reasoning
+      },
+      consensus: communityStep.details.consensus,
+      totalVotes: communityStep.details.votes.length,
+      message: 'Community vote recorded successfully'
+    });
+  } catch (error) {
+    console.error('Community vote error:', error);
+    res.status(400).json({ message: error.message });
   }
 });
 

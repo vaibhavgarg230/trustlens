@@ -275,7 +275,7 @@ export default function BrowseProducts() {
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-600">Vendor Trust:</span>
                     <span className={`text-xs px-2 py-1 rounded-full font-medium ${getTrustScoreColor(product.vendor?.trustScore || 0)}`}>
-                      {product.vendor?.trustScore || 0}
+                      {product.vendor?.trustScore !== undefined ? Number(product.vendor.trustScore).toFixed(2) : '0.00'}
                     </span>
                   </div>
 

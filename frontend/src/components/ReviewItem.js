@@ -6,7 +6,7 @@ const ReviewItem = ({ review }) => {
       <p><strong>Rating:</strong> {review.rating} / 5</p>
       <p>{review.content}</p>
       {review.isAIGenerated && (
-        <span className="badge-ai-warning">⚠️ Suspected AI-generated</span>
+        <span className="badge-ai-warning"> Suspected AI-generated</span>
       )}
       <p className="auth-score">Authenticity Score: {review.authenticityScore}%</p>
     </div>

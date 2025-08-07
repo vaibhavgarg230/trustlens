@@ -108,9 +108,9 @@ export default function VendorProductManager() {
       <div className="border-b border-gray-200 mb-6">
         <nav className="-mb-px flex space-x-8">
           {[
-            { id: 'products', name: 'Products', icon: '' },
-            { id: 'analytics', name: 'Analytics', icon: '' },
-            { id: 'inventory', name: 'Inventory', icon: '' }
+            { id: 'products', name: 'Products' },
+            { id: 'analytics', name: 'Analytics' },
+            { id: 'inventory', name: 'Inventory' }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -121,7 +121,7 @@ export default function VendorProductManager() {
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              {tab.icon} {tab.name}
+              {tab.name}
             </button>
           ))}
         </nav>
@@ -225,7 +225,7 @@ export default function VendorProductManager() {
 
       {/* Inventory Tab */}
       {activeTab === 'inventory' && (
-        <InventoryTab products={products} vendorId={vendorId} onUpdate={fetchData} />
+        <InventoryTab products={products} vendorId={vendorId} onUpdate={fetchData} onEditProduct={handleEditProduct} />
       )}
 
       {/* Product Modal */}
@@ -285,17 +285,10 @@ function ProductCard({ product, onEdit, onDelete }) {
         <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 mb-3">
           <div>Stock: {product.totalInventory || 0}</div>
           <div>Score: {product.authenticityScore}%</div>
-          <div>Sold: {product.totalSold || 0}</div>
-          <div>Returns: {product.totalReturned || 0}</div>
         </div>
         
         <div className="flex gap-2">
-          <button
-            onClick={onEdit}
-            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded text-sm font-medium transition duration-200"
-          >
-            Edit
-          </button>
+          {/* Remove Edit button */}
           <button
             onClick={onDelete}
             className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 px-3 rounded text-sm font-medium transition duration-200"
@@ -347,7 +340,7 @@ function AnalyticsTab({ analytics }) {
             </div>
             <div className="flex justify-between">
               <span>Trust Score:</span>
-              <span className="font-semibold">{analytics.vendorTrustScore}/100</span>
+              <span className="font-semibold">{Number(analytics.vendorTrustScore).toFixed(2)}/100</span>
             </div>
             <div className="flex justify-between">
               <span>Total Inventory:</span>
@@ -373,7 +366,7 @@ function AnalyticsTab({ analytics }) {
 }
 
 // Inventory Tab Component
-function InventoryTab({ products, vendorId, onUpdate }) {
+function InventoryTab({ products, vendorId, onUpdate, onEditProduct }) {
   const lowStockProducts = products.filter(p => (p.totalInventory || 0) < 10);
   const outOfStockProducts = products.filter(p => (p.totalInventory || 0) === 0);
 
@@ -385,12 +378,12 @@ function InventoryTab({ products, vendorId, onUpdate }) {
           <h3 className="text-lg font-semibold text-yellow-800 mb-2">Inventory Alerts</h3>
           {outOfStockProducts.length > 0 && (
             <p className="text-red-600 mb-1">
-              🚨 {outOfStockProducts.length} products are out of stock
+              {outOfStockProducts.length} products are out of stock
             </p>
           )}
           {lowStockProducts.length > 0 && (
             <p className="text-yellow-600">
-              ⚠️ {lowStockProducts.length} products have low stock (less than 10 items)
+              {lowStockProducts.length} products have low stock (less than 10 items)
             </p>
           )}
         </div>
@@ -457,9 +450,7 @@ function InventoryTab({ products, vendorId, onUpdate }) {
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button className="text-indigo-600 hover:text-indigo-900">
-                    Update Stock
-                  </button>
+                  
                 </td>
               </tr>
             ))}
@@ -477,16 +468,47 @@ function ProductModal({ product, vendorId, onClose, onSave }) {
     description: product?.description || '',
     price: product?.price || '',
     category: product?.category || '',
-    inventory: product?.inventory || [{ address: {}, quantity: 0 }]
+    inventory: product?.inventory || [{ address: {}, quantity: 0 }],
+    quantity: product?.quantity || '',
+    images: product?.images && product.images.length > 0 ? product.images : ['']
   });
+
+  // Handler for image URL changes
+  const handleImageChange = (index, value) => {
+    const newImages = [...formData.images];
+    newImages[index] = value;
+    setFormData({ ...formData, images: newImages });
+  };
+
+  const addImageField = () => {
+    if (formData.images.length < 6) setFormData({ ...formData, images: [...formData.images, ''] });
+  };
+
+  const removeImageField = (index) => {
+    if (formData.images.length > 1) {
+      const newImages = formData.images.filter((_, i) => i !== index);
+      setFormData({ ...formData, images: newImages });
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      // Always send all required fields for update
+      const payload = {
+        name: formData.name,
+        description: formData.description,
+        price: Number(formData.price),
+        category: formData.category,
+        quantity: Number(formData.quantity),
+        images: formData.images,
+        // Optionally include inventory if present
+        ...(formData.inventory ? { inventory: formData.inventory } : {})
+      };
       if (product) {
-        await updateVendorProduct(vendorId, product._id, formData);
+        await updateVendorProduct(vendorId, product._id, payload);
       } else {
-        await createVendorProduct(vendorId, formData);
+        await createVendorProduct(vendorId, payload);
       }
       onSave();
       onClose();
@@ -553,6 +575,52 @@ function ProductModal({ product, vendorId, onClose, onSave }) {
                 <option value="Books">Books</option>
                 <option value="Health & Beauty">Health & Beauty</option>
               </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Quantity</label>
+              <input
+                type="number"
+                value={formData.quantity || ''}
+                onChange={(e) => setFormData({...formData, quantity: e.target.value})}
+                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                min={0}
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Image URLs (1–6)</label>
+              {formData.images.map((img, i) => (
+                <div key={i} className="flex gap-2 mb-2">
+                  <input
+                    type="url"
+                    value={img}
+                    onChange={(e) => handleImageChange(i, e.target.value)}
+                    placeholder={`Image URL ${i + 1}`}
+                    className="w-full border px-3 py-2 rounded"
+                    required={i === 0}
+                  />
+                  {formData.images.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeImageField(i)}
+                      className="text-red-600"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              ))}
+              {formData.images.length < 6 && (
+                <button
+                  type="button"
+                  onClick={addImageField}
+                  className="mt-1 text-blue-600 text-sm"
+                >
+                  + Add Another Image
+                </button>
+              )}
             </div>
             
             <div className="flex gap-3 pt-4">

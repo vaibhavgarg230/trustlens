@@ -94,18 +94,15 @@ router.get('/vendors/:vendorId/products', async (req, res) => {
       .populate('seller', 'name companyEmail trustScore')
       .sort(sortOptions);
     
-    // Calculate inventory totals
+    // Calculate inventory totals using 'quantity' as source of truth
     const productsWithInventory = products.map(product => {
       const productObj = product.toObject();
-      
-      // Calculate total inventory
-      const totalInventory = productObj.inventory 
-        ? productObj.inventory.reduce((sum, inv) => sum + inv.quantity, 0)
-        : 0;
-      
+      // Defensive: ensure inventory is always an array
+      if (!Array.isArray(productObj.inventory)) productObj.inventory = [];
+      // Use 'quantity' field for stock
+      const totalInventory = typeof productObj.quantity === 'number' ? productObj.quantity : 0;
       productObj.totalInventory = totalInventory;
       productObj.stockStatus = totalInventory > 0 ? 'In Stock' : 'Out of Stock';
-      
       return productObj;
     });
     
@@ -141,6 +138,15 @@ router.post('/vendors/:vendorId/products', upload.array('images', 5), async (req
       }
     }
     
+    // Parse images if sent as a JSON string (from FormData)
+    if (typeof productData.images === 'string') {
+      try {
+        productData.images = JSON.parse(productData.images);
+      } catch (e) {
+        productData.images = [];
+      }
+    }
+    
     // Set seller to vendor ID
     productData.seller = vendorId;
     
@@ -151,6 +157,9 @@ router.post('/vendors/:vendorId/products', upload.array('images', 5), async (req
     // Handle images (placeholder for now - can be enhanced with actual image upload)
     if (req.files && req.files.length > 0) {
       productData.images = req.files.map(file => `/uploads/${file.originalname}`);
+    } else if (productData.images && Array.isArray(productData.images) && productData.images.length > 0) {
+      // Use image URLs from request body if provided
+      productData.images = productData.images;
     } else {
       productData.images = [];
     }
@@ -162,10 +171,18 @@ router.post('/vendors/:vendorId/products', upload.array('images', 5), async (req
     // Populate seller info for response
     await product.populate('seller', 'name companyEmail trustScore');
     
+    // Defensive: ensure inventory is always an array before returning
+    const productObj = product.toObject();
+    if (!Array.isArray(productObj.inventory)) productObj.inventory = [];
+    // Use 'quantity' field for stock
+    const totalInventory = typeof productObj.quantity === 'number' ? productObj.quantity : 0;
+    productObj.totalInventory = totalInventory;
+    productObj.stockStatus = totalInventory > 0 ? 'In Stock' : 'Out of Stock';
+    
     res.status(201).json({
       success: true,
       message: 'Product created successfully',
-      product: product.toObject()
+      product: productObj
     });
   } catch (error) {
     console.error('Error creating product:', error);
@@ -185,14 +202,30 @@ router.put('/vendors/:vendorId/products/:productId', async (req, res) => {
       return res.status(404).json({ message: 'Product not found or not owned by vendor' });
     }
     
-    // Parse inventory data if it's a string
-    if (typeof updateData.inventory === 'string') {
-      try {
-        updateData.inventory = JSON.parse(updateData.inventory);
-      } catch (e) {
-        // Keep existing inventory if parsing fails
-        delete updateData.inventory;
+    // Only parse and set inventory if present in updateData
+    if (updateData.inventory !== undefined) {
+      if (typeof updateData.inventory === 'string') {
+        try {
+          updateData.inventory = JSON.parse(updateData.inventory);
+        } catch (e) {
+          delete updateData.inventory;
+        }
       }
+      if (!Array.isArray(updateData.inventory)) {
+        updateData.inventory = [];
+      }
+    }
+    // Parse images if sent as a JSON string (from FormData)
+    if (typeof updateData.images === 'string') {
+      try {
+        updateData.images = JSON.parse(updateData.images);
+      } catch (e) {
+        updateData.images = [];
+      }
+    }
+    // Parse quantity if sent as a string
+    if (typeof updateData.quantity === 'string') {
+      updateData.quantity = Number(updateData.quantity);
     }
     
     // Update product
@@ -202,14 +235,25 @@ router.put('/vendors/:vendorId/products/:productId', async (req, res) => {
       { new: true, runValidators: true }
     ).populate('seller', 'name companyEmail trustScore');
     
+    if (!updatedProduct) {
+      return res.status(400).json({ message: 'Product update failed: product not found or validation error.' });
+    }
+    // Defensive: ensure inventory is always an array before returning
+    const productObj = updatedProduct.toObject();
+    if (!Array.isArray(productObj.inventory)) productObj.inventory = [];
+    // Use 'quantity' field for stock
+    const totalInventory = typeof productObj.quantity === 'number' ? productObj.quantity : 0;
+    productObj.totalInventory = totalInventory;
+    productObj.stockStatus = totalInventory > 0 ? 'In Stock' : 'Out of Stock';
+    
     res.json({
       success: true,
       message: 'Product updated successfully',
-      product: updatedProduct.toObject()
+      product: productObj
     });
   } catch (error) {
     console.error('Error updating product:', error);
-    res.status(400).json({ message: error.message });
+    res.status(400).json({ message: error.message, error });
   }
 });
 
@@ -253,10 +297,10 @@ router.get('/vendors/:vendorId/products/:productId', async (req, res) => {
     
     const productObj = product.toObject();
     
+    // Defensive: ensure inventory is always an array
+    if (!Array.isArray(productObj.inventory)) productObj.inventory = [];
     // Calculate total inventory
-    const totalInventory = productObj.inventory 
-      ? productObj.inventory.reduce((sum, inv) => sum + inv.quantity, 0)
-      : 0;
+    const totalInventory = productObj.inventory.reduce((sum, inv) => sum + inv.quantity, 0);
     
     productObj.totalInventory = totalInventory;
     productObj.stockStatus = totalInventory > 0 ? 'In Stock' : 'Out of Stock';
@@ -450,8 +494,17 @@ router.get('/vendors/:vendorId/orders', async (req, res) => {
     
     const totalOrders = await Order.countDocuments(query);
     
+    // Ensure customer name is always present
+    const ordersWithCustomerName = orders.map(order => {
+      const orderObj = order.toObject();
+      if (!orderObj.customerName && orderObj.customer && orderObj.customer.username) {
+        orderObj.customerName = orderObj.customer.username;
+      }
+      return orderObj;
+    });
+    
     res.json({
-      orders,
+      orders: ordersWithCustomerName,
       totalOrders,
       currentPage: parseInt(page),
       totalPages: Math.ceil(totalOrders / parseInt(limit)),
