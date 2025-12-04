@@ -127,16 +127,36 @@ class SocketHandler {
   // Send trust score updates
   async sendTrustScoreUpdate(socket, userId) {
     try {
-      // In a real implementation, you'd fetch from database
+      const User = require('../models/User');
+      const user = await User.findById(userId);
+      
+      if (!user) {
+        socket.emit('trust_update_error', { message: 'User not found' });
+        return;
+      }
+
+      // Calculate trend from previous trust score (if available)
+      let trend = 'stable';
+      if (user.behaviorData?.aiAnalysis?.classification) {
+        const classification = user.behaviorData.aiAnalysis.classification;
+        if (classification.type === 'Human') {
+          trend = 'increasing';
+        } else if (classification.type === 'Bot') {
+          trend = 'decreasing';
+        }
+      }
+
       const trustData = {
         userId,
-        currentScore: Math.floor(Math.random() * 100),
-        trend: Math.random() > 0.5 ? 'increasing' : 'decreasing',
-        lastUpdated: new Date()
+        currentScore: user.trustScore,
+        trend: trend,
+        lastUpdated: user.updatedAt || user.createdAt,
+        riskLevel: user.riskLevel
       };
 
       socket.emit('trust_score_update', trustData);
     } catch (error) {
+      console.error('Error fetching trust score:', error);
       socket.emit('trust_update_error', { message: 'Failed to fetch trust score' });
     }
   }

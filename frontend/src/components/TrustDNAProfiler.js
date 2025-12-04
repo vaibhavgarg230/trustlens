@@ -202,7 +202,7 @@ const TrustDNAProfiler = () => {
         }]
       };
     }
-    // Simulated data based on user profile
+    // Calculated data based on real user profile metrics
     const trustFactor = selectedUser.trustScore / 100;
     const calculatedAccountAge = selectedUser.createdAt ? 
       Math.floor((new Date() - new Date(selectedUser.createdAt)) / (1000 * 60 * 60 * 24)) : 

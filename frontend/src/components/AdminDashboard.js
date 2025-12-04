@@ -33,24 +33,37 @@ const AdminDashboard = () => {
 
   const checkAuthentication = () => {
     try {
-      const adminToken = localStorage.getItem('adminAuth');
-      if (adminToken) {
-        const adminData = JSON.parse(adminToken);
-        if (adminData.email === 'admin@trustlens.com' && adminData.loginTime) {
-          // Check if login is less than 24 hours old
-          const loginTime = new Date(adminData.loginTime);
-          const now = new Date();
-          const hoursDiff = (now - loginTime) / (1000 * 60 * 60);
-          
-          if (hoursDiff < 24) {
+      const token = localStorage.getItem('token');
+      const role = localStorage.getItem('role');
+      
+      if (token && role === 'admin') {
+        // Verify token is valid by decoding it
+        try {
+          const decoded = JSON.parse(atob(token.split('.')[1]));
+          // Check if token is expired
+          const now = Math.floor(Date.now() / 1000);
+          if (decoded.exp && decoded.exp > now && decoded.role === 'admin') {
             setIsAuthenticated(true);
           } else {
+            // Token expired
+            localStorage.removeItem('token');
+            localStorage.removeItem('role');
             localStorage.removeItem('adminAuth');
             setIsAuthenticated(false);
           }
+        } catch (e) {
+          // Invalid token
+          localStorage.removeItem('token');
+          localStorage.removeItem('role');
+          localStorage.removeItem('adminAuth');
+          setIsAuthenticated(false);
         }
+      } else {
+        setIsAuthenticated(false);
       }
     } catch (e) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('role');
       localStorage.removeItem('adminAuth');
       setIsAuthenticated(false);
     } finally {
@@ -59,6 +72,8 @@ const AdminDashboard = () => {
   };
 
   const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('role');
     localStorage.removeItem('adminAuth');
     setIsAuthenticated(false);
   };

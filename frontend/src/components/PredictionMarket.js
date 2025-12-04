@@ -17,10 +17,11 @@ const PredictionMarket = () => {
 
   const fetchPredictionData = async () => {
     try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
       const [marketsRes, suggestionsRes, statsRes] = await Promise.all([
-        fetch('http://localhost:3001/api/predictions?all=true'),
-        fetch('http://localhost:3001/api/predictions/suggestions/ai'),
-        fetch('http://localhost:3001/api/predictions/stats/overview')
+        fetch(`${apiUrl}/predictions?all=true`),
+        fetch(`${apiUrl}/predictions/suggestions/ai`),
+        fetch(`${apiUrl}/predictions/stats/overview`)
       ]);
 
       const marketsData = await marketsRes.json();
@@ -48,12 +49,22 @@ const PredictionMarket = () => {
         metric: suggestion.type === 'trust_score_prediction' ? 'trust_score' : 'fraud_likelihood'
       },
       timeframeDays: suggestion.type === 'trust_score_prediction' ? 30 : 14,
-      createdBy: '6841c7373efc698423881aff' // Use valid ObjectId instead of "system"
+      createdBy: (() => {
+        try {
+          const token = localStorage.getItem('token');
+          if (!token) return null;
+          const decoded = JSON.parse(atob(token.split('.')[1]));
+          return decoded.id;
+        } catch (e) {
+          return null;
+        }
+      })() || 'system'
     };
 
 
 
-    const response = await fetch('http://localhost:3001/api/predictions', {
+    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+    const response = await fetch(`${apiUrl}/predictions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(marketData)
@@ -76,11 +87,21 @@ const PredictionMarket = () => {
 
   const placeBet = async (marketId) => {
     try {
-      const response = await fetch(`http://localhost:3001/api/predictions/${marketId}/bet`, {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+      const response = await fetch(`${apiUrl}/predictions/${marketId}/bet`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          bettorId: '6841c7373efc698423881aff', // Demo user ID
+          bettorId: (() => {
+            try {
+              const token = localStorage.getItem('token');
+              if (!token) return null;
+              const decoded = JSON.parse(atob(token.split('.')[1]));
+              return decoded.id;
+            } catch (e) {
+              return null;
+            }
+          })(),
           prediction: betPrediction,
           amount: betAmount,
           confidence: 75
@@ -105,7 +126,8 @@ const PredictionMarket = () => {
     // For trust score markets, fetch the current user's trust score
     if (market.marketType === 'trust_score_prediction') {
       try {
-        const response = await fetch(`http://localhost:3001/api/users/${market.targetUser}`);
+        const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+        const response = await fetch(`${apiUrl}/users/${market.targetUser}`);
         if (response.ok) {
           const userData = await response.json();
           currentValue = userData.trustScore || 0;
@@ -126,7 +148,8 @@ const PredictionMarket = () => {
   const handleResolve = async () => {
     if (!resolveModal.market || resolveModal.value === '') return;
     try {
-      const response = await fetch(`http://localhost:3001/api/predictions/${resolveModal.market._id}/resolve`, {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+      const response = await fetch(`${apiUrl}/predictions/${resolveModal.market._id}/resolve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

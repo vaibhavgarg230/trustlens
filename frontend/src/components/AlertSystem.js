@@ -20,7 +20,8 @@ const AlertSystem = () => {
 
   const fetchAlerts = async () => {
   try {
-    const response = await fetch('http://localhost:3001/api/alerts', {
+    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+    const response = await fetch(`${apiUrl}/alerts`, {
       headers: {
         'Accept': 'application/json'
       }
@@ -70,9 +71,8 @@ const AlertSystem = () => {
 
   const resolveAlert = async (alertId) => {
   try {
-
-
-    const response = await fetch(`http://localhost:3001/api/alerts/${alertId}`, {
+    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+    const response = await fetch(`${apiUrl}/alerts/${alertId}`, {
       method: 'PUT',
       headers: { 
         'Content-Type': 'application/json',
@@ -96,7 +96,8 @@ const AlertSystem = () => {
     // Wait a moment for backend to update
     setTimeout(async () => {
       try {
-        const freshResponse = await fetch('http://localhost:3001/api/alerts', {
+        const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+        const freshResponse = await fetch(`${apiUrl}/alerts`, {
           headers: { 'Accept': 'application/json' }
         });
         const freshAlerts = await freshResponse.json();
@@ -124,11 +125,22 @@ const AlertSystem = () => {
 
   const createTestAlert = async () => {
   try {
+    const getCurrentUserId = () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return null;
+        const decoded = JSON.parse(atob(token.split('.')[1]));
+        return decoded.id;
+      } catch (e) {
+        return null;
+      }
+    };
+
     const testAlert = {
       type: 'Bot Behavior', // Correct enum value
       severity: 'Medium',
       description: 'This is a test alert created from the Alert System interface',
-      target: '6841c7373efc698423881aff',
+      target: getCurrentUserId() || 'system',
       targetType: 'User', // Correct enum value (capital U)
       status: 'Active'
       // Removed 'source' field as it's not in your schema
@@ -136,7 +148,8 @@ const AlertSystem = () => {
 
 
 
-    const response = await fetch('http://localhost:3001/api/alerts', {
+    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+    const response = await fetch(`${apiUrl}/alerts`, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',

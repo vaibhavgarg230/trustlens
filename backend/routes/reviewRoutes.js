@@ -124,10 +124,41 @@ router.post('/', async (req, res) => {
     );
     
     // Calculate enhanced authenticity score
-    const userHistory = {}; // TODO: Fetch user's review history
+    // Fetch user's review history
+    const Review = require('../models/Review');
+    const Order = require('../models/Order');
+    
+    const userReviewCount = await Review.countDocuments({ 
+      reviewer: reviewData.reviewer 
+    });
+    
+    const userHistory = {
+      totalReviews: userReviewCount,
+      reviewFrequency: userReviewCount > 0 ? userReviewCount : 0
+    };
+    
+    // Fetch order data if purchaseVerified
+    let orderTrustScore = 50;
+    if (reviewData.purchaseVerified && reviewData.orderId) {
+      const order = await Order.findById(reviewData.orderId);
+      if (order) {
+        orderTrustScore = order.vendorTrustScore || 50;
+      }
+    } else if (reviewData.purchaseVerified) {
+      // Try to find order by product and customer
+      const order = await Order.findOne({
+        customer: reviewData.reviewer,
+        product: reviewData.product
+      }).sort({ createdAt: -1 });
+      
+      if (order) {
+        orderTrustScore = order.vendorTrustScore || 50;
+      }
+    }
+    
     const orderData = {
       purchaseVerified: reviewData.purchaseVerified || false,
-      orderTrustScore: 50 // TODO: Fetch from order data
+      orderTrustScore: orderTrustScore
     };
     
     const authenticityResult = linguisticAnalyzer.calculateAuthenticityScore(

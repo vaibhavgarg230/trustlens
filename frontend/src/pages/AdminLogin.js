@@ -50,29 +50,38 @@ const AdminLogin = () => {
     setLoading(true);
     setError('');
 
-    // Simulate login process
+    // Real API login
     try {
-      // Simple authentication simulation
-      if (formData.email === 'admin@trustlens.com' && formData.password === 'admin123') {
-        // Store admin auth in localStorage
-        const adminAuth = {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+      const response = await fetch(`${apiUrl}/admin/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: formData.email,
+          password: formData.password
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.token) {
+        // Store JWT token
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('role', 'admin');
+        localStorage.setItem('adminAuth', JSON.stringify({
           email: formData.email,
           role: 'admin',
           loginTime: new Date().toISOString()
-        };
-        
-        localStorage.setItem('adminAuth', JSON.stringify(adminAuth));
-        
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        }));
         
         // Redirect to admin dashboard
         navigate('/admin/dashboard', { replace: true });
       } else {
-        setError('Invalid credentials. Use admin@trustlens.com / admin123');
+        setError(data.error || 'Invalid credentials');
       }
     } catch (err) {
       setError('Login failed. Please try again.');
+      console.error('Admin login error:', err);
     } finally {
       setLoading(false);
     }

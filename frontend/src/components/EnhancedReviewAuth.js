@@ -32,7 +32,12 @@ const EnhancedReviewAuth = () => {
     fetchReviewData();
     
     // WebSocket connection for real-time updates
-    const socket = new WebSocket('ws://localhost:3001');
+    const getWebSocketUrl = () => {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+      const baseUrl = apiUrl.replace('/api', '').replace('http://', 'ws://').replace('https://', 'wss://');
+      return baseUrl;
+    };
+    const socket = new WebSocket(getWebSocketUrl());
     
     socket.onopen = () => {
 

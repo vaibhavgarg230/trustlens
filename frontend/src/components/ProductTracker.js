@@ -147,9 +147,20 @@ const ProductTracker = () => {
 
   const initializeLifecycle = async (productId) => {
     try {
+      const getCurrentUserId = () => {
+        try {
+          const token = localStorage.getItem('token');
+          if (!token) return null;
+          const decoded = JSON.parse(atob(token.split('.')[1]));
+          return decoded.id;
+        } catch (e) {
+          return null;
+        }
+      };
+
       await apiService.initializeProductLifecycle({
         productId,
-        sellerId: selectedProduct?.seller || '6841c7373efc698423881aff',
+        sellerId: selectedProduct?.seller?._id || selectedProduct?.seller || getCurrentUserId() || 'system',
         initialPrice: selectedProduct?.price || 0
       });
 
@@ -184,7 +195,16 @@ const ProductTracker = () => {
       await apiService.progressProductLifecycle({
         productId: selectedProduct._id,
         newStage,
-        performedBy: selectedProduct.seller || '6841c7373efc698423881aff',
+        performedBy: selectedProduct.seller?._id || selectedProduct.seller || (() => {
+          try {
+            const token = localStorage.getItem('token');
+            if (!token) return 'system';
+            const decoded = JSON.parse(atob(token.split('.')[1]));
+            return decoded.id;
+          } catch (e) {
+            return 'system';
+          }
+        })(),
         details: { timestamp: new Date(), action: `Progressed to ${newStage}` }
       });
 
@@ -200,7 +220,16 @@ const ProductTracker = () => {
     try {
       await apiService.trackProductView({
         productId: selectedProduct._id,
-        viewerId: '6841c7373efc698423881aff'
+        viewerId: (() => {
+          try {
+            const token = localStorage.getItem('token');
+            if (!token) return null;
+            const decoded = JSON.parse(atob(token.split('.')[1]));
+            return decoded.id;
+          } catch (e) {
+            return null;
+          }
+        })()
       });
 
       await fetchProductAnalytics(selectedProduct._id);

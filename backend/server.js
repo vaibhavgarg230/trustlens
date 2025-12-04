@@ -29,6 +29,7 @@ const orderRoutes = require('./routes/orderRoutes');
 
 const authRoutes   = require('./routes/authRoutes');
 const vendorRoutes = require('./routes/vendorRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 // after app.use(express.json()):
 
@@ -41,7 +42,7 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: process.env.FRONTEND_URL || "http://localhost:3000",
     methods: ["GET", "POST"],
     credentials: true
   }
@@ -52,13 +53,17 @@ const PORT = process.env.PORT || 3001;
 // Initialize Socket Handler
 const socketHandler = new SocketHandler(io);
 
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || "http://localhost:3000",
+  credentials: true
+}));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Use auth routes
 app.use('/api/auth',   authRoutes);
 app.use('/api/vendor', vendorRoutes);
+app.use('/api/admin', adminRoutes);
 
 
 // Make io available to routes

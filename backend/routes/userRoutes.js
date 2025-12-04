@@ -4,6 +4,7 @@ const User = require('../models/User');
 const TrustAnalyzer = require('../utils/trustAnalyzer');
 const RealAIAnalyzer = require('../utils/realAIAnalyzer');
 const { AlertSystem } = require('../utils/alertSystem');
+const verifyToken = require('../middleware/verifyTokenMiddleware');
 
 // Initialize the real AI analyzer
 const aiAnalyzer = new RealAIAnalyzer();
@@ -20,24 +21,25 @@ router.post('/', async (req, res) => {
     
     // REAL AI behavioral analysis if typing data exists
     if (userData.behaviorData && userData.behaviorData.typingCadence && userData.behaviorData.typingCadence.length > 0) {
-      const behaviorAnalysis = aiAnalyzer.analyzeTypingBehaviorAdvanced(
+      const behaviorAnalysis = await aiAnalyzer.analyzeTypingBehaviorAdvanced(
         userData.behaviorData.typingCadence,
-        userData.behaviorData.mousePatterns || []
+        userData.behaviorData.mousePatterns || [],
+        null // userId not available during signup
       );
       
       // Store detailed behavioral analysis
       userData.behaviorData.aiAnalysis = behaviorAnalysis;
       
       // Adjust trust score based on AI analysis
-      if (behaviorAnalysis.classification === 'Bot') {
+      if (behaviorAnalysis.classification?.type === 'Bot') {
         userData.trustScore = Math.max(10, userData.trustScore - 40);
         userData.riskLevel = 'High';
-      } else if (behaviorAnalysis.classification === 'Suspicious') {
+      } else if (behaviorAnalysis.classification?.type === 'Suspicious') {
         userData.trustScore = Math.max(20, userData.trustScore - 20);
         userData.riskLevel = 'Medium';
       }
       
-      console.log(`🤖 Behavioral Analysis: ${behaviorAnalysis.classification} (${behaviorAnalysis.confidence}% confidence)`);
+      console.log(`🤖 Behavioral Analysis: ${behaviorAnalysis.classification?.type || 'Unknown'} (${behaviorAnalysis.classification?.confidence || 0}% confidence)`);
     }
     
     const user = new User(userData);
@@ -149,7 +151,12 @@ router.post('/:id/analyze-behavior', async (req, res) => {
     
     console.log('🔍 Performing real-time behavioral analysis...');
     
-    const behaviorAnalysis = aiAnalyzer.analyzeTypingBehaviorAdvanced(typingData, mouseData);
+    // Pass userId for IP-based fraud detection
+    const behaviorAnalysis = await aiAnalyzer.analyzeTypingBehaviorAdvanced(
+      typingData, 
+      mouseData || [], 
+      req.params.id // Pass userId for IP analysis
+    );
     
     // Update user's behavioral data
     user.behaviorData.typingCadence = typingData;
@@ -158,13 +165,18 @@ router.post('/:id/analyze-behavior', async (req, res) => {
     
     // Recalculate trust score based on new analysis
     const oldTrustScore = user.trustScore;
-    if (behaviorAnalysis.classification === 'Bot') {
+    if (behaviorAnalysis.classification?.type === 'Bot') {
       user.trustScore = Math.max(10, user.trustScore - 30);
       user.riskLevel = 'High';
-    } else if (behaviorAnalysis.classification === 'Human') {
+    } else if (behaviorAnalysis.classification?.type === 'Human') {
       user.trustScore = Math.min(100, user.trustScore + 10);
       user.riskLevel = user.riskLevel === 'High' ? 'Medium' : user.riskLevel;
     }
+    
+    // Also recalculate using TrustAnalyzer for comprehensive score
+    const TrustAnalyzer = require('../utils/trustAnalyzer');
+    const comprehensiveScore = await TrustAnalyzer.calculateTrustScore(user);
+    user.trustScore = comprehensiveScore;
     
     await user.save();
     
@@ -185,29 +197,45 @@ router.post('/:id/analyze-behavior', async (req, res) => {
 });
 
 // Update user with AI-enhanced analysis
-router.put('/:id', async (req, res) => {
+router.put('/:id', verifyToken, async (req, res) => {
   try {
+    // Verify user can only update themselves (unless admin)
+    if (req.user.id !== req.params.id && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden: You can only update your own profile' });
+    }
+    
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    
     const userData = req.body;
     
     // Recalculate trust score with AI enhancement
-    userData.trustScore = TrustAnalyzer.calculateTrustScore(userData);
+    const TrustAnalyzer = require('../utils/trustAnalyzer');
+    userData.trustScore = await TrustAnalyzer.calculateTrustScore(user);
     
     // AI behavioral analysis if new typing data
     if (userData.behaviorData && userData.behaviorData.typingCadence) {
-      const behaviorAnalysis = aiAnalyzer.analyzeTypingBehaviorAdvanced(userData.behaviorData.typingCadence);
+      const behaviorAnalysis = await aiAnalyzer.analyzeTypingBehaviorAdvanced(
+        userData.behaviorData.typingCadence,
+        userData.behaviorData.mousePatterns || [],
+        req.params.id // Pass userId for IP analysis
+      );
       userData.behaviorData.aiAnalysis = behaviorAnalysis;
       
       // Adjust trust score based on AI analysis
-      if (behaviorAnalysis.classification === 'Bot') {
+      if (behaviorAnalysis.classification?.type === 'Bot') {
         userData.trustScore = Math.max(10, userData.trustScore - 40);
+        userData.riskLevel = 'High';
+      } else if (behaviorAnalysis.classification?.type === 'Human') {
+        userData.trustScore = Math.min(100, userData.trustScore + 10);
+        userData.riskLevel = userData.riskLevel === 'High' ? 'Medium' : userData.riskLevel;
       }
     }
     
-    const user = await User.findByIdAndUpdate(req.params.id, userData, { new: true });
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    const updatedUser = await User.findByIdAndUpdate(req.params.id, userData, { new: true });
     
     // Check for alerts with updated data
-    await AlertSystem.checkUserBehavior(user);
+    await AlertSystem.checkUserBehavior(updatedUser);
     
     res.json(user);
   } catch (error) {

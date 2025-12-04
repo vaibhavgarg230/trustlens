@@ -117,7 +117,6 @@ export default function Welcome() {
         </div>
 
         {/* Footer */}
-<<<<<<< HEAD
         <div className="text-center mt-16">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 max-w-4xl mx-auto">
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
@@ -143,9 +142,6 @@ export default function Welcome() {
             </div>
           </div>
         </div>
-=======
-        {/* Removed advanced AI features section */}
->>>>>>> f1af70b787dab9e7f1d17e31876d5415841d5a05
       </div>
     </div>
   );

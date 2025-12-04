@@ -40,7 +40,8 @@ export default function VendorAnalytics() {
       setLoading(true);
       setError(null);
       
-      const response = await fetch(`http://localhost:3001/api/vendor/vendors/${vendorId}/analytics/dashboard?period=${selectedPeriod}`, {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+      const response = await fetch(`${apiUrl}/vendor/vendors/${vendorId}/analytics/dashboard?period=${selectedPeriod}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }

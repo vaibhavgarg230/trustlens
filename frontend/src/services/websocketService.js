@@ -8,7 +8,7 @@ class WebSocketService {
   }
 
   // Connect to WebSocket server
-  connect(serverUrl = 'http://localhost:3001') {
+  connect(serverUrl = process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:3001') {
     if (this.socket) {
       console.log('🔌 WebSocket already connected');
       return;
@@ -162,57 +162,28 @@ class WebSocketService {
     }
   }
 
-  // Simulate real-time behavioral data collection
+  // Start real-time behavioral data collection
+  // Note: Actual data collection should be done by RealTimeBehaviorTracker component
+  // This method is kept for compatibility but does not generate fake data
   startBehavioralTracking(userId) {
-    if (!this.isConnected) return;
+    if (!this.isConnected) {
+      console.warn('⚠️ WebSocket not connected. Cannot start behavioral tracking.');
+      return;
+    }
 
-    console.log('🎯 Starting behavioral tracking for user:', userId);
-
-    // Simulate typing pattern collection
-    const typingInterval = setInterval(() => {
-      const typingCadence = this.generateRealisticTypingData();
-      this.sendTypingData(userId, typingCadence);
-    }, 10000); // Every 10 seconds
-
-    // Simulate mouse movement collection
-    const mouseInterval = setInterval(() => {
-      const mouseMovements = this.generateRealisticMouseData();
-      this.sendMouseData(userId, mouseMovements);
-    }, 15000); // Every 15 seconds
-
-    // Store intervals for cleanup
-    this.trackingIntervals = { typingInterval, mouseInterval };
-
-    return this.trackingIntervals;
+    console.log('🎯 Behavioral tracking ready for user:', userId);
+    console.log('📝 Note: Use RealTimeBehaviorTracker component to collect real behavioral data');
+    
+    // Do not generate fake data - real data should come from RealTimeBehaviorTracker
+    // This method is kept for API compatibility
+    return { typingInterval: null, mouseInterval: null };
   }
 
   // Stop behavioral tracking
   stopBehavioralTracking() {
-    if (this.trackingIntervals) {
-      clearInterval(this.trackingIntervals.typingInterval);
-      clearInterval(this.trackingIntervals.mouseInterval);
-      this.trackingIntervals = null;
-      console.log('🛑 Behavioral tracking stopped');
-    }
-  }
-
-  // Generate realistic typing data for simulation
-  generateRealisticTypingData() {
-    const baseSpeed = 150 + Math.random() * 50; // 150-200 WPM base
-    const variation = 20; // Natural human variation
-    
-    return Array.from({ length: 8 }, () => 
-      Math.round(baseSpeed + (Math.random() - 0.5) * variation)
-    );
-  }
-
-  // Generate realistic mouse data for simulation
-  generateRealisticMouseData() {
-    return Array.from({ length: 20 }, (_, i) => ({
-      x: Math.round(100 + i * 10 + Math.random() * 5),
-      y: Math.round(100 + Math.sin(i * 0.5) * 20 + Math.random() * 5),
-      timestamp: Date.now() + i * 100
-    }));
+    // Cleanup is handled by RealTimeBehaviorTracker component
+    console.log('🛑 Behavioral tracking stopped');
+    this.trackingIntervals = null;
   }
 
   // Get connection status

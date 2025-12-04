@@ -174,10 +174,73 @@ const RealTimeBehaviorTracker = ({ isActive, onAnalysisResult }) => {
       setCurrentAnalysis(analysis);
       onAnalysisResult && onAnalysisResult(analysis);
       
+      // Send to backend for AI analysis and storage
+      sendBehavioralDataToBackend('typing', intervals);
+      
     } catch (error) {
       console.error('Error in keystroke analysis:', error);
       // Reset buffer if there's an error
       keystrokeBuffer.current = keystrokeBuffer.current.slice(-10);
+    }
+  };
+
+  const sendBehavioralDataToBackend = async (type, data) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return; // User not logged in
+      
+      const decoded = JSON.parse(atob(token.split('.')[1]));
+      const userId = decoded.id;
+      
+      if (!userId) return;
+      
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+      
+      if (type === 'typing') {
+        // Send typing data to backend for AI analysis
+        const response = await fetch(`${apiUrl}/users/${userId}/analyze-behavior`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            typingData: data,
+            mouseData: []
+          })
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          console.log('✅ Behavioral data analyzed and stored:', result);
+        }
+      } else if (type === 'mouse') {
+        // Mouse data can be sent separately or combined
+        const mouseData = mouseBuffer.current.map(m => ({
+          x: m.x,
+          y: m.y,
+          timestamp: m.timestamp
+        }));
+        
+        const response = await fetch(`${apiUrl}/users/${userId}/analyze-behavior`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            typingData: [],
+            mouseData: mouseData
+          })
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          console.log('✅ Mouse data analyzed and stored:', result);
+        }
+      }
+    } catch (error) {
+      console.error('Error sending behavioral data to backend:', error);
     }
   };
 
@@ -224,6 +287,9 @@ const RealTimeBehaviorTracker = ({ isActive, onAnalysisResult }) => {
 
       setCurrentAnalysis(analysis);
       onAnalysisResult && onAnalysisResult(analysis);
+      
+      // Send to backend for AI analysis and storage
+      sendBehavioralDataToBackend('mouse', distances);
       
     } catch (error) {
       console.error('Error in mouse analysis:', error);

@@ -51,21 +51,24 @@ router.post('/test', async (req, res) => {
 
 // @route   POST /api/orders
 // @desc    Place a new order
-// @access  Public (will add auth later)
-router.post('/', async (req, res) => {
+// @access  Private (Customer only)
+const verifyToken = require('../middleware/verifyTokenMiddleware');
+router.post('/', verifyToken, async (req, res) => {
   try {
     const {
-      customerId,
       productId,
       quantity = 1,
       shippingAddress,
       paymentMethod = 'Cash on Delivery'
     } = req.body;
 
+    // Get customer ID from authenticated token
+    const customerId = req.user.id;
+    
     // Validate required fields
-    if (!customerId || !productId || !shippingAddress) {
+    if (!productId || !shippingAddress) {
       return res.status(400).json({ 
-        error: 'Customer ID, Product ID, and shipping address are required' 
+        error: 'Product ID and shipping address are required' 
       });
     }
 
@@ -75,9 +78,9 @@ router.post('/', async (req, res) => {
       return res.status(404).json({ error: 'Customer not found' });
     }
 
-    // Fetch product details using direct API call to avoid population issues
-    const productResponse = await fetch(`http://localhost:3001/api/products/${productId}`);
-    const product = await productResponse.json();
+    // Fetch product details using direct database query
+    const Product = require('../models/Product');
+    const product = await Product.findById(productId).populate('seller', 'name trustScore');
     
     if (!product || !product.name) {
       return res.status(404).json({ error: 'Product not found' });
@@ -96,8 +99,11 @@ router.post('/', async (req, res) => {
     // Extract IP address
     const ipAddress = extractIPAddress(req);
 
-    // Get vendor data (prefer vendor over seller)
-    const vendorData = product.vendor || product.seller;
+    // Get vendor data (prefer seller field)
+    const vendorData = product.seller;
+    const vendorId = vendorData?._id || vendorData;
+    const vendorName = vendorData?.name || 'Unknown Vendor';
+    const vendorTrustScore = vendorData?.trustScore || 50;
     
     const order = new Order({
       customer: customerId,
@@ -106,10 +112,10 @@ router.post('/', async (req, res) => {
       product: productId,
       productName: product.name,
       productPrice: product.price,
-      productImage: product.images[0] || '',
-      vendor: vendorData._id,
-      vendorName: vendorData.name,
-      vendorTrustScore: vendorData.trustScore || 50,
+      productImage: product.images?.[0] || '',
+      vendor: vendorId,
+      vendorName: vendorName,
+      vendorTrustScore: vendorTrustScore,
       quantity,
       totalAmount,
       shippingAddress,
@@ -128,14 +134,21 @@ router.post('/', async (req, res) => {
       }
     });
 
-    // Update customer transaction count
+    // Update customer transaction count and recalculate trust score
     customer.transactionCount = (customer.transactionCount || 0) + 1;
+    
+    // Recalculate trust score based on new transaction
+    const TrustAnalyzer = require('../utils/trustAnalyzer');
+    const newTrustScore = await TrustAnalyzer.calculateTrustScore(customer);
+    customer.trustScore = newTrustScore;
+    
     await customer.save();
 
     res.status(201).json({
       message: 'Order placed successfully',
       order,
-      orderNumber: order.orderNumber
+      orderNumber: order.orderNumber,
+      updatedTrustScore: newTrustScore
     });
 
   } catch (error) {
@@ -146,8 +159,12 @@ router.post('/', async (req, res) => {
 
 // @route   GET /api/orders/customer/:customerId
 // @desc    Get all orders for a customer
-// @access  Public (will add auth later)
-router.get('/customer/:customerId', async (req, res) => {
+// @access  Private (Customer only)
+router.get('/customer/:customerId', verifyToken, async (req, res) => {
+  // Verify customer can only access their own orders
+  if (req.user.id !== req.params.customerId && req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Forbidden: You can only access your own orders' });
+  }
   try {
     const { customerId } = req.params;
     
@@ -166,8 +183,12 @@ router.get('/customer/:customerId', async (req, res) => {
 
 // @route   GET /api/orders/vendor/:vendorId
 // @desc    Get all orders for a vendor
-// @access  Public (will add auth later)
-router.get('/vendor/:vendorId', async (req, res) => {
+// @access  Private (Vendor or Admin only)
+router.get('/vendor/:vendorId', verifyToken, async (req, res) => {
+  // Verify vendor can only access their own orders (unless admin)
+  if (req.user.id !== req.params.vendorId && req.user.role !== 'admin' && req.user.role !== 'vendor') {
+    return res.status(403).json({ error: 'Forbidden: You can only access your own vendor orders' });
+  }
   try {
     const { vendorId } = req.params;
     
@@ -186,8 +207,8 @@ router.get('/vendor/:vendorId', async (req, res) => {
 
 // @route   GET /api/orders/:orderId
 // @desc    Get order details by ID
-// @access  Public (will add auth later)
-router.get('/:orderId', async (req, res) => {
+// @access  Private (Customer, Vendor, or Admin only)
+router.get('/:orderId', verifyToken, async (req, res) => {
   try {
     const { orderId } = req.params;
     
@@ -200,6 +221,15 @@ router.get('/:orderId', async (req, res) => {
       return res.status(404).json({ error: 'Order not found' });
     }
     
+    // Verify access rights: customer, vendor, or admin can access
+    const isCustomer = order.customer._id.toString() === req.user.id || order.customer.toString() === req.user.id;
+    const isVendor = order.vendor._id.toString() === req.user.id || order.vendor.toString() === req.user.id;
+    const isAdmin = req.user.role === 'admin';
+    
+    if (!isCustomer && !isVendor && !isAdmin) {
+      return res.status(403).json({ error: 'Forbidden: You can only access your own orders' });
+    }
+    
     res.json(order);
 
   } catch (error) {
@@ -210,8 +240,8 @@ router.get('/:orderId', async (req, res) => {
 
 // @route   PUT /api/orders/:orderId/status
 // @desc    Update order status
-// @access  Public (will add auth later)
-router.put('/:orderId/status', async (req, res) => {
+// @access  Private (Customer, Vendor, or Admin only)
+router.put('/:orderId/status', verifyToken, async (req, res) => {
   try {
     const { orderId } = req.params;
     const { status, description, updatedBy = 'Customer', trackingNumber } = req.body;
@@ -227,6 +257,20 @@ router.put('/:orderId/status', async (req, res) => {
     const order = await Order.findById(orderId);
     if (!order) {
       return res.status(404).json({ error: 'Order not found' });
+    }
+    
+    // Verify access rights: customer can update their own orders, vendor can update their orders, admin can update any
+    const isCustomer = order.customer.toString() === req.user.id;
+    const isVendor = order.vendor.toString() === req.user.id;
+    const isAdmin = req.user.role === 'admin';
+    
+    if (!isCustomer && !isVendor && !isAdmin) {
+      return res.status(403).json({ error: 'Forbidden: You can only update your own orders' });
+    }
+    
+    // Only vendor or admin can update to Shipped/Delivered
+    if (['Shipped', 'Delivered'].includes(status) && !isVendor && !isAdmin) {
+      return res.status(403).json({ error: 'Forbidden: Only vendor or admin can update order to Shipped/Delivered' });
     }
     
     // Update tracking number if provided
@@ -250,8 +294,8 @@ router.put('/:orderId/status', async (req, res) => {
 
 // @route   POST /api/orders/:orderId/cancel
 // @desc    Cancel an order
-// @access  Public (will add auth later)
-router.post('/:orderId/cancel', async (req, res) => {
+// @access  Private (Customer, Vendor, or Admin only)
+router.post('/:orderId/cancel', verifyToken, async (req, res) => {
   try {
     const { orderId } = req.params;
     const { reason = 'Customer requested cancellation' } = req.body;
@@ -259,6 +303,15 @@ router.post('/:orderId/cancel', async (req, res) => {
     const order = await Order.findById(orderId).populate('product');
     if (!order) {
       return res.status(404).json({ error: 'Order not found' });
+    }
+    
+    // Verify access rights: customer can cancel their own orders, vendor/admin can cancel any
+    const isCustomer = order.customer.toString() === req.user.id;
+    const isVendor = order.vendor.toString() === req.user.id;
+    const isAdmin = req.user.role === 'admin';
+    
+    if (!isCustomer && !isVendor && !isAdmin) {
+      return res.status(403).json({ error: 'Forbidden: You can only cancel your own orders' });
     }
     
     // Check if order can be cancelled
@@ -292,8 +345,12 @@ router.post('/:orderId/cancel', async (req, res) => {
 
 // @route   GET /api/orders
 // @desc    Get all orders (admin view)
-// @access  Public (will add auth later)
-router.get('/', async (req, res) => {
+// @access  Private (Admin only)
+router.get('/', verifyToken, async (req, res) => {
+  // Only admin can view all orders
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Forbidden: Admin access required' });
+  }
   try {
     const { status, page = 1, limit = 10 } = req.query;
     
@@ -327,8 +384,12 @@ router.get('/', async (req, res) => {
 
 // @route   GET /api/orders/stats/overview
 // @desc    Get order statistics
-// @access  Public (will add auth later)
-router.get('/stats/overview', async (req, res) => {
+// @access  Private (Admin or Vendor only)
+router.get('/stats/overview', verifyToken, async (req, res) => {
+  // Admin and vendors can view stats
+  if (req.user.role !== 'admin' && req.user.role !== 'vendor') {
+    return res.status(403).json({ error: 'Forbidden: Admin or Vendor access required' });
+  }
   try {
     const totalOrders = await Order.countDocuments();
     const pendingOrders = await Order.countDocuments({ status: 'Pending' });

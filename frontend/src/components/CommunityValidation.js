@@ -15,7 +15,8 @@ const CommunityValidation = () => {
 
   const fetchPendingReviews = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/enhanced-reviews/pending-review');
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+      const response = await fetch(`${apiUrl}/enhanced-reviews/pending-review`);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch pending reviews: ${response.status}`);
@@ -25,7 +26,15 @@ const CommunityValidation = () => {
       setPendingReviews(data);
       
       // Check which reviews the current user has already voted on
-      const currentUserId = '6841c7373efc698423881aff'; // Demo user ID
+      const token = localStorage.getItem('token');
+      const currentUserId = token ? (() => {
+        try {
+          const decoded = JSON.parse(atob(token.split('.')[1]));
+          return decoded.id;
+        } catch (e) {
+          return null;
+        }
+      })() : null;
       const userVotedReviews = new Set();
       
       data.forEach(authRecord => {
@@ -54,11 +63,21 @@ const CommunityValidation = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:3001/api/enhanced-reviews/${reviewId}/community-vote`, {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+      const response = await fetch(`${apiUrl}/enhanced-reviews/${reviewId}/community-vote`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          voterId: '6841c7373efc698423881aff', // Demo user ID
+          voterId: (() => {
+            try {
+              const token = localStorage.getItem('token');
+              if (!token) return null;
+              const decoded = JSON.parse(atob(token.split('.')[1]));
+              return decoded.id;
+            } catch (e) {
+              return null;
+            }
+          })(),
           vote: userVote,
           confidence,
           reasoning

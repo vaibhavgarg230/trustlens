@@ -131,10 +131,6 @@ export default function CustomerDashboard() {
                   {user.trustScore}
                 </p>
               </div>
-<<<<<<< HEAD
-              <div className="text-3xl"></div>
-=======
->>>>>>> f1af70b787dab9e7f1d17e31876d5415841d5a05
             </div>
           </div>
 
@@ -147,10 +143,6 @@ export default function CustomerDashboard() {
                   {user.riskLevel}
                 </p>
               </div>
-<<<<<<< HEAD
-              <div className="text-3xl"></div>
-=======
->>>>>>> f1af70b787dab9e7f1d17e31876d5415841d5a05
             </div>
           </div>
 
@@ -161,10 +153,6 @@ export default function CustomerDashboard() {
                 <p className="text-sm text-gray-600 mb-1">Transactions</p>
                 <p className="text-2xl font-bold text-blue-600">{user.transactionCount}</p>
               </div>
-<<<<<<< HEAD
-              <div className="text-3xl"></div>
-=======
->>>>>>> f1af70b787dab9e7f1d17e31876d5415841d5a05
             </div>
           </div>
 
@@ -175,10 +163,6 @@ export default function CustomerDashboard() {
                 <p className="text-sm text-gray-600 mb-1">Account Age</p>
                 <p className="text-2xl font-bold text-green-600">{user.accountAge} days</p>
               </div>
-<<<<<<< HEAD
-              <div className="text-3xl"></div>
-=======
->>>>>>> f1af70b787dab9e7f1d17e31876d5415841d5a05
             </div>
           </div>
         </div>

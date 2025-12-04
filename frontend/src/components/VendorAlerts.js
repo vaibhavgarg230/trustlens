@@ -49,7 +49,8 @@ const VendorAlerts = ({ vendorId }) => {
       setLoading(true);
       setError(null);
       
-      const response = await fetch(`http://localhost:3001/api/vendor/vendors/${vendorId}/alerts`, {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+      const response = await fetch(`${apiUrl}/vendor/vendors/${vendorId}/alerts`, {
         headers: {
           'Accept': 'application/json'
         }
@@ -88,7 +89,8 @@ const VendorAlerts = ({ vendorId }) => {
 
   const resolveAlert = async (alertId) => {
     try {
-      const response = await fetch(`http://localhost:3001/api/vendor/vendors/${vendorId}/alerts/${alertId}/resolve`, {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+      const response = await fetch(`${apiUrl}/vendor/vendors/${vendorId}/alerts/${alertId}/resolve`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
@@ -115,7 +117,8 @@ const VendorAlerts = ({ vendorId }) => {
 
   const dismissAlert = async (alertId) => {
     try {
-      const response = await fetch(`http://localhost:3001/api/vendor/vendors/${vendorId}/alerts/${alertId}/dismiss`, {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+      const response = await fetch(`${apiUrl}/vendor/vendors/${vendorId}/alerts/${alertId}/dismiss`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
@@ -152,7 +155,8 @@ const VendorAlerts = ({ vendorId }) => {
         }
       };
 
-      const response = await fetch(`http://localhost:3001/api/vendor/vendors/${vendorId}/alerts`, {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+      const response = await fetch(`${apiUrl}/vendor/vendors/${vendorId}/alerts`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

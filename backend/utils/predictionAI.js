@@ -13,10 +13,14 @@ class PredictionAI {
       // --- Hugging Face DistilBERT Integration ---
       const summary = `User trustScore: ${user.trustScore}, accountAge: ${user.accountAge}, transactionCount: ${user.transactionCount}, riskLevel: ${user.riskLevel}`;
       try {
+        const headers = {};
+        if (process.env.HUGGINGFACE_API_KEY) {
+          headers.Authorization = `Bearer ${process.env.HUGGINGFACE_API_KEY}`;
+        }
         const hfResponse = await axios.post(
           'https://api-inference.huggingface.co/models/distilbert-base-uncased-finetuned-sst-2-english',
           { inputs: summary },
-          { headers: { Authorization: `Bearer HUGGINGFACE_API_KEY` } }
+          { headers }
         );
         const label = hfResponse.data[0]?.label || 'NEGATIVE';
         const score = hfResponse.data[0]?.score || 0.5;
@@ -150,10 +154,14 @@ class PredictionAI {
       // --- Hugging Face DistilBERT Integration ---
       const summary = `User trustScore: ${user.trustScore}, accountAge: ${user.accountAge}, transactionCount: ${user.transactionCount}, riskLevel: ${user.riskLevel}`;
       try {
+        const headers = {};
+        if (process.env.HUGGINGFACE_API_KEY) {
+          headers.Authorization = `Bearer ${process.env.HUGGINGFACE_API_KEY}`;
+        }
         const hfResponse = await axios.post(
           'https://api-inference.huggingface.co/models/distilbert-base-uncased-finetuned-sst-2-english',
           { inputs: summary },
-          { headers: { Authorization: `Bearer HUGGINGFACE_API_KEY` } }
+          { headers }
         );
         const label = hfResponse.data[0]?.label || 'NEGATIVE';
         const score = hfResponse.data[0]?.score || 0.5;
