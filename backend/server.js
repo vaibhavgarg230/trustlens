@@ -112,18 +112,15 @@ app.get('/', (req, res) => {
 const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://localhost:27017/trustlens';
 console.log('Connecting to MongoDB URI:', mongoUri);
 
-mongoose.connect(mongoUri, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
+mongoose.connect(mongoUri)
 .then(() => console.log('MongoDB connected'))
 .catch((err) => console.error('MongoDB connection error:', err));
 
 // Start server with Socket.IO
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 TRUSTLENS Server running on port ${PORT}`);
   console.log(`🔌 WebSocket server ready for real-time connections`);
-  console.log(`📊 Dashboard: http://localhost:3000`);
+  console.log(`📊 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
   console.log(`🤖 AI-powered fraud detection: ACTIVE`);
 });
 

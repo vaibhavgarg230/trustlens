@@ -24,6 +24,7 @@
     "react-scripts": "^5.0.1",
     "react-vis-network-graph": "^3.0.1",
     "recharts": "^2.15.3",
+    "serve": "^14.2.0",
     "socket.io-client": "^4.8.1",
     "typescript": "^4.9.5",
     "vis-data": "^7.1.9",

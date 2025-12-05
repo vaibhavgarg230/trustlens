@@ -1,0 +1,6 @@
+# Railway project configuration
+# This file helps Railway understand your monorepo structure
+
+[build]
+builder = "NIXPACKS"
+
