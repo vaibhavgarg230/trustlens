@@ -2,10 +2,10 @@
 nixPkgs = ["nodejs_20"]
 
 [phases.install]
-cmds = ["npm install"]
+cmds = ["npm install serve --save"]
 
-[phases.build]
-cmds = ["npm run build"]
+# Skip build phase - using pre-built files from repository
+# Build is done locally to avoid Railway memory issues
 
 [start]
 cmd = "npx serve -s build -l $PORT"
